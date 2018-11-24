@@ -76,5 +76,4 @@ Replace `SERVER_IP` `USERNAME` `PASSWORD` with real ones.
 8. `systemctl start srun3000-sdu-qingdao-client`
 
 ## Installation on Windows
-Although it is okay to create a shortcut at `startup` folder, it is better to create a service. `srvany` is a 32-bit program provided by Microsoft to let any program become a service, and you can get a 64-bit implementation at repo [ariscop/srvany](https://github.com/ariscop/srvany).
-Details about how to make it as a service is available here. [Chinese version](https://www.pencillab.cn/archives/73.html)
+Although it is okay to create a shortcut at `startup` folder, it is better to create a service. `srvany` is a 32-bit program provided by Microsoft to let any program become a service, and you can get a 64-bit implementation at repo [birkett/srvany-ng](https://github.com/birkett/srvany-ng.git).
