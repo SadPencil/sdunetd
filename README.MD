@@ -3,6 +3,7 @@
 A very simple cross-platform srun3000 portal client.
 
 Ver 1.1 is suitable for Shandong University, Qingdao Campus, up to 2018.
+
 Ver 2.0-RC is probably suitable for Shandong University, Qingdao Campus, since March 2019.
 
 Static builds are available [here](https://github.com/SadPencil/srun3000-sdu-qingdao-client/releases).
@@ -45,6 +46,7 @@ killall srun3000-sdu-qingdao-client
 ```
 
 Replace `SERVER_IP` `USERNAME` `PASSWORD` `INTERFACE` with real ones.
+
 `INTERFACE` is the name of your network interface, e.g, `eth0` `eth0.1` `eno1` `Local Area Connection`.
 
 6. `/etc/init.d/srun3000-sdu-qingdao-client enable`
@@ -71,6 +73,7 @@ Restart=always
 WantedBy=multi-user.target
 ```
 Replace `SERVER_IP` `USERNAME` `PASSWORD` `INTERFACE` with real ones.
+
 `INTERFACE` is the name of your network interface, e.g, `eth0` `eth0.1` `eno1` `Local Area Connection`.
 
 6. `systemctl daemon-reload`
