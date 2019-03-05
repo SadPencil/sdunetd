@@ -2,14 +2,15 @@
 
 A very simple cross-platform srun3000 portal client.
 
-Up to 2018, it is suitable for Shandong University, Qingdao Campus.
+Ver 1.1 is suitable for Shandong University, Qingdao Campus, up to 2018.
+Ver 2.0-RC is probably suitable for Shandong University, Qingdao Campus, since March 2019.
 
 Static builds are available [here](https://github.com/SadPencil/srun3000-sdu-qingdao-client/releases).
 
 ## Copyright
-Copyright © 2018 Sad Pencil &lt;me@pencil.live&gt;
+Copyright © 2018-2019 Sad Pencil &lt;me@pencil.live&gt;
 
-This program is free software. It comes without any warranty, to the extent permitted by applicable law. You can redistribute it and/or modify it under the terms of the Do What The Fuck You Want To Public License, Version 2, as published by Sam Hocevar. See http://www.wtfpl.net/ for more details.
+MIT License
 
 ## Installation on OpenWRT
 
@@ -35,7 +36,7 @@ This program is free software. It comes without any warranty, to the extent perm
 START=60
  
 start() { 
-/usr/bin/srun3000-sdu-qingdao-client -s SERVER_IP -u USERNAME -p PASSWORD -log /tmp/srun3000-sdu-qingdao.log &
+/usr/bin/srun3000-sdu-qingdao-client -s SERVER_IP -u USERNAME -p PASSWORD -interface INTERFACE -log /tmp/srun3000-sdu-qingdao.log &
 } 
 
 stop() { 
@@ -43,7 +44,8 @@ killall srun3000-sdu-qingdao-client
 }
 ```
 
-Replace `SERVER_IP` `USERNAME` `PASSWORD` with real ones.
+Replace `SERVER_IP` `USERNAME` `PASSWORD` `INTERFACE` with real ones.
+`INTERFACE` is the name of your network interface, e.g, `eth0` `eth0.1` `eno1` `Local Area Connection`.
 
 6. `/etc/init.d/srun3000-sdu-qingdao-client enable`
 7. `/etc/init.d/srun3000-sdu-qingdao-client start`
@@ -62,14 +64,14 @@ Wants=network.target
 [Service]
 Type=simple
 PrivateTmp=true
-ExecStart=/usr/bin/srun3000-sdu-qingdao-client -s SERVER_IP -u USERNAME -p PASSWORD -log /tmp/srun3000-sdu-qingdao.log
+ExecStart=/usr/bin/srun3000-sdu-qingdao-client -s SERVER_IP -u USERNAME -p PASSWORD -interface INTERFACE -log /tmp/srun3000-sdu-qingdao.log
 Restart=always
 
 [Install]
 WantedBy=multi-user.target
 ```
-
-Replace `SERVER_IP` `USERNAME` `PASSWORD` with real ones.
+Replace `SERVER_IP` `USERNAME` `PASSWORD` `INTERFACE` with real ones.
+`INTERFACE` is the name of your network interface, e.g, `eth0` `eth0.1` `eno1` `Local Area Connection`.
 
 6. `systemctl daemon-reload`
 7. `systemctl enable srun3000-sdu-qingdao-client`
