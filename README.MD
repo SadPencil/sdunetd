@@ -45,7 +45,7 @@ killall sdunetd
 }
 ```
 
-Replace `SERVER_IP` `USERNAME` `PASSWORD` `INTERFACE` with real ones.
+Replace `SERVER_IP` `USERNAME` `PASSWORD` `INTERFACE` with real ones. `SERVER_IP` is `101.76.193.1` for SDU-Qingdao.
 
 `INTERFACE` is the name of your network interface, e.g, `eth0` `eth0.1` `eno1` `Local Area Connection`.
 
@@ -72,7 +72,7 @@ Restart=always
 [Install]
 WantedBy=multi-user.target
 ```
-Replace `SERVER_IP` `USERNAME` `PASSWORD` `INTERFACE` with real ones.
+Replace `SERVER_IP` `USERNAME` `PASSWORD` `INTERFACE` with real ones. `SERVER_IP` is `101.76.193.1` for SDU-Qingdao.
 
 `INTERFACE` is the name of your network interface, e.g, `eth0` `eth0.1` `eno1` `Local Area Connection`.
 
