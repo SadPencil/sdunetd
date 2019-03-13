@@ -66,7 +66,7 @@ Wants=network.target
 [Service]
 Type=simple
 PrivateTmp=true
-ExecStart=/usr/bin/sdunetd -s SERVER_IP -u USERNAME -p PASSWORD -interface INTERFACE -log /tmp/sdunetd.log
+ExecStart=/usr/bin/sdunetd -s SERVER_IP -u USERNAME -p PASSWORD -interface INTERFACE
 Restart=always
 
 [Install]
