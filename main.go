@@ -252,31 +252,55 @@ func getChallenge(scheme, server, rawUsername, localIP string, challenge *string
 
 	return nil
 }
-func login(scheme, server, rawUsername, rawPassword, localIP, interfaceWtf string) (err error) {
+func login(scheme, server, rawUsername, rawPassword, localIPv4, interfaceWtf string, strict bool)  (err error) {
 	if interfaceWtf == "" {
-		return loginFromIP(scheme, server, rawUsername, rawPassword, localIP)
-	} else if localIP == "" {
-		return loginFromInterface(scheme, server, rawUsername, rawPassword, interfaceWtf)
+		return loginFromIP(scheme, server, rawUsername, rawPassword, localIPv4,strict)
+	} else if localIPv4 == "" {
+		return loginFromInterface(scheme, server, rawUsername, rawPassword, interfaceWtf,strict)
 	} else {
 		return errors.New("no IP or interface specified")
 	}
 }
-func loginFromInterface(scheme, server, rawUsername, rawPassword, interfaceWtf string) (err error) {
+func loginFromInterface(scheme, server, rawUsername, rawPassword, interfaceWtf string, strict bool)  (err error) {
 	localIP, err := GetIPFromInterface(interfaceWtf)
 	if err != nil {
 		return err
 	}
-	return loginFromIP(scheme, server, rawUsername, rawPassword, localIP)
+	return loginFromIP(scheme, server, rawUsername, rawPassword, localIP,strict)
 }
 
-func loginFromIP(scheme, server, rawUsername, rawPassword, localIP string) (err error) {
+func loginFromIP(scheme, server, rawUsername, rawPassword, localIPv4 string, strict bool) (err error) {
 	var challenge string
-	err = getChallenge(scheme, server, rawUsername, localIP, &challenge)
+	err = getChallenge(scheme, server, rawUsername, localIPv4, &challenge)
 	if err != nil {
 		return err
 	}
 
 	client := &http.Client{}
+	if strict {
+		localAddress, err := net.ResolveTCPAddr("tcp", localIPv4)
+		if err != nil {
+			return err
+		}
+
+		//https://stackoverflow.com/questions/30552447/how-to-set-which-ip-to-use-for-a-http-request
+		// Create a transport like http.DefaultTransport, but with a specified localAddr
+
+		client.Transport = &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+			DialContext: (&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 30 * time.Second,
+				LocalAddr: localAddress,
+				DualStack: true,
+			}).DialContext,
+			MaxIdleConns:          100,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+		}
+
+	}
 
 	req, err := http.NewRequest("GET", scheme+"://"+server+"/cgi-bin/srun_portal", nil)
 	if err != nil {
@@ -286,7 +310,7 @@ func loginFromIP(scheme, server, rawUsername, rawPassword, localIP string) (err 
 
 	var dataInfoStr, dataPasswordMd5Str, dataChecksumStr string
 
-	err = sdunetChallenge(rawUsername, rawPassword, localIP, challenge, &dataInfoStr, &dataPasswordMd5Str, &dataChecksumStr)
+	err = sdunetChallenge(rawUsername, rawPassword, localIPv4, challenge, &dataInfoStr, &dataPasswordMd5Str, &dataChecksumStr)
 	if err != nil {
 		return err
 	}
@@ -296,14 +320,11 @@ func loginFromIP(scheme, server, rawUsername, rawPassword, localIP string) (err 
 	q.Add("username", rawUsername)
 	q.Add("password", dataPasswordMd5Str)
 	q.Add("ac_id", "1")
-	q.Add("ip", localIP)
+	q.Add("ip", localIPv4)
 	q.Add("info", dataInfoStr)
 	q.Add("chksum", dataChecksumStr)
 	q.Add("n", "200")
 	q.Add("type", "1")
-	////test
-	//q.Add("_","1551706314836")
-	//q.Add("callback","jQuery190049845529388992094_1551706314834")
 
 	req.URL.RawQuery = q.Encode()
 
@@ -325,7 +346,7 @@ func loginFromIP(scheme, server, rawUsername, rawPassword, localIP string) (err 
 	return nil
 }
 
-//GetIPFromInterface gets IP address from the specific interface
+//GetIPFromInterface gets an IPv4 address from the specific interface
 func GetIPFromInterface(interfaceWtf string) (string, error) {
 	ifaces, err := net.InterfaceByName(interfaceWtf)
 	if err != nil {
@@ -387,8 +408,10 @@ func main() {
 	password := flag.String("p", "", "password (required)")
 	logFilename := flag.String("log", "", "log (optional): the output log file. Otherwise it will be output to stdout")
 	interval := flag.Int("interval", 60, "interval (optional): time interval (seconds)")
-	localIP := flag.String("local", "", "local ip")
-	interfaceWtf := flag.String("interface", "", "interface")
+	localIP := flag.String("local", "", "the IPv4 address")
+	interfaceWtf := flag.String("interface", "", "interface name where to get the IPv4 address")
+	strictMode := flag.Bool("strict",false,"whether to force the traffic sent from the given IPv4 address or (also) the given interface")
+
 	flag.Parse()
 
 	//required arguments
@@ -424,7 +447,7 @@ func main() {
 	for {
 		if ! detectNetwork() {
 			log.Println("Network is down. Log in via web portal...")
-			err := login(*scheme, *server, *username, *password, *localIP, *interfaceWtf)
+			err := login(*scheme, *server, *username, *password, *localIP, *interfaceWtf,*strictMode)
 			if err != nil {
 				log.Println("Login failed.", err)
 			}
