@@ -32,12 +32,12 @@ func main() {
 	flag.BoolVar(&FlagNoAttribute, "no_attribute", false, "output log without attributes. Turn it on when running as a systemd service.")
 	flag.Parse()
 
-	if FlagShowHelp {
-		flag.Usage()
+	version()
+	if FlagShowVersion {
 		return
 	}
-	if FlagShowVersion {
-		version()
+	if FlagShowHelp {
+		flag.Usage()
 		return
 	}
 
@@ -84,7 +84,6 @@ func main() {
 
 	log.SetFlags(0)
 
-	version()
 	//loop
 	for {
 		if !detectNetwork() {
