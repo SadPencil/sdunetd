@@ -193,7 +193,6 @@ func cartman() {
 		}
 		if yesOrNo {
 			log.Println("Log in via web portal...")
-			fmt.Println("interface=", Settings.Network.Interface)
 			err := login(Settings.Account.Scheme,
 				Settings.Account.AuthServer,
 				Settings.Account.Username,

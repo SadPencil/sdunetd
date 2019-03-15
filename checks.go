@@ -38,7 +38,7 @@ func checkPassword(settings *Settings) (err error) {
 	settings.Account.Password = strings.TrimSpace(settings.Account.Password)
 
 	if settings.Account.Password == "" {
-		return errors.New("Just give me your password so I can hack into your... Ah, I mean, login the network.")
+		return errors.New("Give me your password, bitch. 'Cause I need it to hack into your... Ah, I mean, login the network.")
 	}
 
 	return nil
