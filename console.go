@@ -94,6 +94,7 @@ func cartman() {
 			if err == nil {
 				_, err = fmt.Println(interfaceWtf.Name + "\t" + name)
 				interfaceName = name
+				println("interfacename=", interfaceName)
 			}
 		}
 		if len(interfaces) == 0 {
