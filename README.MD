@@ -21,7 +21,7 @@ go get -v github.com/SadPencil/sdunetd
 go build github.com/SadPencil/sdunetd
 ```
 
-Rename the file to `sdunetd`.
+Rename the executable to `sdunetd`.
 
 ## Generate a configuration file
 
