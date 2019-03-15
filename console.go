@@ -88,18 +88,17 @@ func cartman() {
 		if err != nil {
 			panic(err)
 		}
+		var interfaceName string
 		for _, interfaceWtf := range interfaces {
-			name, err := GetIPFromInterface(interfaceWtf.Name)
+			interfaceName, err := GetIPFromInterface(interfaceWtf.Name)
 			if err == nil {
-				_, err = fmt.Println(interfaceWtf.Name + "\t" + name)
+				_, err = fmt.Println(interfaceWtf.Name + "\t" + interfaceName)
 			}
 		}
-		var interfaceName string
-		if len(interfaces) > 0 {
-			interfaceName = interfaces[0].Name
-		} else {
+		if len(interfaces) == 0 {
 			fmt.Println("There is not even a network interface with a valid IPv4 address.")
 			fmt.Println("Screw you guys, I'm going home.")
+			return
 		}
 		fmt.Println("Network interfaces are listed above. Which one is connected to the Portal network? [" + interfaceName + "]")
 		Settings.Network.Interface, err = reader.ReadString('\n')
