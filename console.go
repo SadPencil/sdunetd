@@ -108,7 +108,7 @@ func cartman() {
 		}
 		Settings.Network.Interface = strings.TrimSpace(Settings.Network.Interface)
 		if Settings.Network.Interface == "" {
-			Settings.Network.Interface = interfaces[0].Name
+			Settings.Network.Interface = interfaceName
 		}
 
 		if err != nil {
