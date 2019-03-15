@@ -8,15 +8,14 @@ import (
 )
 
 type Account struct {
-	Username    string `json:"username"`
-	Password    string `json:"password"`
-	LoginServer string `json:"server"`
-	Scheme      string `json:"scheme"`
+	Username   string `json:"username"`
+	Password   string `json:"password"`
+	AuthServer string `json:"server"`
+	Scheme     string `json:"scheme"`
 }
 
 type Log struct {
-	Filename             string `json:"filename"`
-	WithoutTimeAttribute bool   `json:"without_time_attribute"`
+	Filename string `json:"filename"`
 }
 
 type Network struct {
@@ -36,20 +35,27 @@ type Settings struct {
 	Control Control `json:"control"`
 }
 
+func NewSettings() Settings {
+	return Settings{
+		Account: Account{Scheme: DEFAULT_AUTH_SCHEME, AuthServer: DEFAULT_AUTH_SERVER},
+		Control: Control{Interval: DEFAULT_INTERVAL},
+	}
+}
+
 // LoadSettings -- Load settings from config file
-func LoadSettings(configPath string, settings *Settings) error {
+func LoadSettings(configPath string) (settings Settings, err error) {
 	// LoadSettings from config file
 	file, err := ioutil.ReadFile(configPath)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Error occurs while reading config file.")
-		return err
+		return NewSettings(), err
 	}
 
-	err = json.Unmarshal(file, settings)
+	err = json.Unmarshal(file, &settings)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Error occurs while unmarshalling config file.")
-		return err
+		return NewSettings(), err
 	}
 
-	return nil
+	return settings, nil
 }

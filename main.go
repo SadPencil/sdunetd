@@ -51,8 +51,7 @@ func main() {
 		return
 	}
 
-	var Settings Settings
-	err = LoadSettings(FlagConfigFile, &Settings)
+	Settings, err := LoadSettings(FlagConfigFile)
 	if err != nil {
 		panic(err)
 	}
@@ -74,7 +73,7 @@ func main() {
 
 	//openfile
 	if Settings.Log.Filename != "" {
-		logFile, err := os.OpenFile(Settings.Log.Filename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
+		logFile, err := os.OpenFile(Settings.Log.Filename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 		defer logFile.Close()
 		if err != nil {
 			log.Panicln(err)
@@ -91,7 +90,7 @@ func main() {
 		if !detectNetwork() {
 			log.Println("Network is down. Log in via web portal...")
 			err := login(Settings.Account.Scheme,
-				Settings.Account.LoginServer,
+				Settings.Account.AuthServer,
 				Settings.Account.Username,
 				Settings.Account.Password,
 				Settings.Network.CustomIP,

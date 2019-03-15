@@ -13,7 +13,7 @@ import (
 )
 
 func cartman() {
-	Settings := Settings{}
+	Settings := NewSettings()
 	reader := bufio.NewReader(os.Stdin)
 
 	fmt.Println("Looks like the config file doesn't exist.")
@@ -41,8 +41,7 @@ func cartman() {
 		bytePassword, err := terminal.ReadPassword(int(syscall.Stdin))
 		fmt.Println() // it's necessary to add a new line after user's input
 		if err != nil {
-			fmt.Println(err)
-			continue
+			panic(err)
 		} else {
 			Settings.Account.Password = string(bytePassword)
 		}
@@ -50,7 +49,7 @@ func cartman() {
 		if err != nil {
 			fmt.Println(err)
 		} else {
-			fmt.Println("Great. Your password contains", fmt.Sprint(len(Settings.Account.Password)), " characters.")
+			fmt.Println("Great. Your password contains", fmt.Sprint(len(Settings.Account.Password)), "characters.")
 			break
 		}
 	}
@@ -58,7 +57,7 @@ func cartman() {
 	for {
 		fmt.Println("Question 3. What's your school's authenticate server's ip address? [" + DEFAULT_AUTH_SERVER + "]")
 		fmt.Println("Hint: You can also write down the server's FQDN if necessary.")
-		Settings.Account.LoginServer, err = reader.ReadString('\n')
+		Settings.Account.AuthServer, err = reader.ReadString('\n')
 		if err != nil {
 			panic(err)
 		}
@@ -144,12 +143,12 @@ func cartman() {
 		if err != nil {
 			panic(err)
 		}
+		filename = strings.TrimSpace(filename)
 		if filename == "" {
 			filename = DEFAULT_CONFIG_FILENAME
 		}
-		f, err := os.Open(filename)
+		f, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE, 0644)
 		defer f.Close()
-
 		if err != nil {
 			fmt.Println(err)
 		} else {
@@ -195,7 +194,7 @@ func cartman() {
 		if yesOrNo {
 			log.Println("Log in via web portal...")
 			err := login(Settings.Account.Scheme,
-				Settings.Account.LoginServer,
+				Settings.Account.AuthServer,
 				Settings.Account.Username,
 				Settings.Account.Password,
 				Settings.Network.CustomIP,
