@@ -1,7 +1,6 @@
 # sdunetd
-
-A simple cross-platform srun3000 portal client.
-
+Embedded SRUN3000 Portal Client for SDU-Qingdao
+_________
 Ver 1.1 is suitable for Shandong University, Qingdao Campus, up to 2018.
 
 Ver 2.0-RC is probably suitable for Shandong University, Qingdao Campus, since March 2019.
