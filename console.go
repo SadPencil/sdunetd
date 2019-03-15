@@ -93,8 +93,7 @@ func cartman() {
 			name, err := GetIPFromInterface(interfaceWtf.Name)
 			if err == nil {
 				_, err = fmt.Println(interfaceWtf.Name + "\t" + name)
-				interfaceName = name
-				println("interfacename=", interfaceName)
+				interfaceName = interfaceWtf.Name
 			}
 		}
 		if len(interfaces) == 0 {
