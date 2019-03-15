@@ -90,9 +90,10 @@ func cartman() {
 		}
 		var interfaceName string
 		for _, interfaceWtf := range interfaces {
-			interfaceName, err := GetIPFromInterface(interfaceWtf.Name)
+			name, err := GetIPFromInterface(interfaceWtf.Name)
 			if err == nil {
-				_, err = fmt.Println(interfaceWtf.Name + "\t" + interfaceName)
+				_, err = fmt.Println(interfaceWtf.Name + "\t" + name)
+				interfaceName = name
 			}
 		}
 		if len(interfaces) == 0 {
