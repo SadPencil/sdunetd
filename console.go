@@ -15,6 +15,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 	"syscall"
 )
@@ -90,32 +91,77 @@ func cartman() {
 	}
 
 	for {
+
 		fmt.Println("Question 5.")
+		var ips []string
+		var interfaceStrings []string
+		{
+			ip, err := getIPFromChallenge(Settings.Account.Scheme,
+				Settings.Account.AuthServer,
+				Settings.Account.Username,
+				"",
+				"",
+				false)
+			if err != nil {
+				fmt.Println(err)
+				ips = append(ips, "")
+				//忽略错误继续
+			} else {
+				ips = append(ips, ip)
+				interfaceStrings = append(interfaceStrings, "")
+				fmt.Println(len(ips)-1, "\t", ip, "\t", "[Auto detect]")
+			}
+		}
+
 		interfaces, err := net.Interfaces()
 		if err != nil {
 			panic(err)
 		}
-		var interfaceName string
+
 		for _, interfaceWtf := range interfaces {
-			name, err := GetIPFromInterface(interfaceWtf.Name)
+			ip, err := GetIPFromInterface(interfaceWtf.Name)
 			if err == nil {
-				_, err = fmt.Println(interfaceWtf.Name + "\t" + name)
-				interfaceName = interfaceWtf.Name
+				ips = append(ips, ip)
+				interfaceStrings = append(interfaceStrings, interfaceWtf.Name)
+				fmt.Println(len(ips)-1, "\t", ip, "\t", interfaceWtf.Name)
 			}
 		}
-		if len(interfaces) == 0 {
+
+		if len(ips) == 0 {
 			fmt.Println("There is not even a network interface with a valid IPv4 address.")
 			fmt.Println("Screw you guys, I'm going home.")
 			return
 		}
-		fmt.Println("Network interfaces are listed above. Which one is connected to the Portal network? [" + interfaceName + "]")
-		Settings.Network.Interface, err = reader.ReadString('\n')
+
+		fmt.Println("Network interfaces are listed above. Which one is connected to the Portal network? [0]")
+		choice, err := reader.ReadString('\n')
 		if err != nil {
 			panic(err)
 		}
-		Settings.Network.Interface = strings.TrimSpace(Settings.Network.Interface)
-		if Settings.Network.Interface == "" {
-			Settings.Network.Interface = interfaceName
+		choice = strings.TrimSpace(choice)
+
+		var choiceID int
+		if choice == "" {
+			choiceID = 0
+		} else {
+			choiceID, err = strconv.Atoi(choice)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+		}
+
+		if choiceID == 0 {
+			Settings.Network.Interface = ""
+			Settings.Network.CustomIP = ""
+			Settings.Network.DetectIP = true
+		} else if choiceID > 0 && choiceID < len(interfaceStrings) {
+			Settings.Network.Interface = interfaceStrings[choiceID]
+			Settings.Network.CustomIP = ""
+			Settings.Network.DetectIP = false
+		} else {
+			fmt.Println("You think I'm a retard? Fuck you, asshole.")
+			continue
 		}
 
 		if err != nil {
@@ -126,7 +172,7 @@ func cartman() {
 	}
 	var saveFile bool
 	for {
-		fmt.Println("That's it. That's all the information needed. Would you like to save it to a config file? [y/n]")
+		fmt.Println("That's all the information needed. Would you like to save it to a config file? [y/n]")
 		yesOrNoStr, err := reader.ReadString('\n')
 		if err != nil {
 			panic(err)
