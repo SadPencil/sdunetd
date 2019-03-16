@@ -94,8 +94,8 @@ killall sdunetd
 Although it is okay to create a shortcut at `startup` folder, it is better to create a service. `srvany` is a 32-bit program provided by Microsoft to let any program become a service, and you can get a 64-bit implementation at repo [birkett/srvany-ng](https://github.com/birkett/srvany-ng.git).
 
 ## Dynamic DNS
-We recommend [TimothyYe/GoDNS](https://github.com/TimothyYe/godns). In the configuration file, set `ip_interface` to your network interface, to help GoDNS get the real IPv4 address. Click [here](https://github.com/TimothyYe/godns#get-an-ip-address-from-the-interface) to get detailed help.
+We recommend [TimothyYe/GoDNS](https://github.com/TimothyYe/godns). In the configuration file, set `ip_interface` to your network interface to help GoDNS get the real IPv4 address. Click [here](https://github.com/TimothyYe/godns#get-an-ip-address-from-the-interface) to get detailed help.
 
-However, you can't use GoDNS behind a NAT router because the Internet traffic at SDU-Qingdao is being masqueradeed, so that online services can't determine your real IPv4 address.
+However, you can't use GoDNS behind a NAT router because the Internet traffic at SDU-Qingdao is being masqueraded, so that online services can't determine your real IPv4 address.
 
 sdunetd is able to detect your real IPv4 address at SDU-Qingdao no matter you are under a router or not. So, if you do need this feature, open an issue at [sdunetd](https://github.com/SadPencil/sdunetd/issues) so that we can fork a special version of GoDNS which is suitable for SDU-Qingdao.
