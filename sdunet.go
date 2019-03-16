@@ -209,45 +209,74 @@ func detectNetwork() bool {
 	return bytes.Compare(body, []byte("Microsoft Connect Test")) == 0
 }
 
-func getChallenge(scheme, server, rawUsername, localIP string, challenge *string) (err error) {
-
-	client := &http.Client{}
+func getRawChallenge(scheme, server, rawUsername, localIPv4 string, strict bool) (challenge map[string]interface{}, err error) {
+	client, err := getHttpClient(strict, localIPv4)
+	if err != nil {
+		return nil, err
+	}
 
 	req, err := http.NewRequest("GET", scheme+"://"+server+"/cgi-bin/get_challenge", nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	req.Header.Add("Accept", "application/json")
 
 	q := req.URL.Query()
 	q.Add("username", rawUsername)
-	q.Add("ip", localIP)
+	q.Add("ip", localIPv4)
 	req.URL.RawQuery = q.Encode()
 
 	fmt.Println(req.URL.String())
 	resp, err := client.Do(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	defer resp.Body.Close()
 	respBody, _ := ioutil.ReadAll(resp.Body)
 
+	//debug
+	fmt.Println(string(respBody))
+	//debug
+
 	if resp.StatusCode != 200 {
-		return errors.New(resp.Status)
+		return nil, errors.New(resp.Status)
 	}
 
-	var output map[string]interface{}
-	err = json.Unmarshal(respBody, &output)
+	err = json.Unmarshal(respBody, &challenge)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	*challenge = output["challenge"].(string)
-
-	fmt.Println(*challenge)
-
-	return nil
+	return challenge, nil
 }
+
+func getChallenge(scheme, server, rawUsername, localIPv4 string, strict bool) (challenge string, err error) {
+	output, err := getRawChallenge(scheme, server, rawUsername, localIPv4, strict)
+	if err != nil {
+		return "", err
+	}
+	challenge = output["challenge"].(string)
+	fmt.Println(challenge)
+	return challenge, nil
+}
+
+func getIPFromChallenge(scheme, server, rawUsername string, localIP string, interfaceWtf string, strict bool) (IP string, err error) {
+	if localIP == "" {
+		localIP, err = GetIPFromInterface(interfaceWtf)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	output, err := getRawChallenge(scheme, server, rawUsername, localIP, strict)
+	if err != nil {
+		return "", err
+	}
+	IP = output["challenge"].(string)
+	//fmt.Println(IP)
+	return IP, nil
+}
+
 func login(scheme, server, rawUsername, rawPassword, localIPv4, interfaceWtf string, strict bool) (err error) {
 	if interfaceWtf == "" {
 		return loginFromIP(scheme, server, rawUsername, rawPassword, localIPv4, strict)
@@ -265,18 +294,12 @@ func loginFromInterface(scheme, server, rawUsername, rawPassword, interfaceWtf s
 	return loginFromIP(scheme, server, rawUsername, rawPassword, localIP, strict)
 }
 
-func loginFromIP(scheme, server, rawUsername, rawPassword, localIPv4 string, strict bool) (err error) {
-	var challenge string
-	err = getChallenge(scheme, server, rawUsername, localIPv4, &challenge)
-	if err != nil {
-		return err
-	}
-
-	client := &http.Client{}
+func getHttpClient(strict bool, localIPv4 string) (client http.Client, err error) {
+	client = http.Client{}
 	if strict {
 		localAddress, err := net.ResolveTCPAddr("tcp", localIPv4)
 		if err != nil {
-			return err
+			return client, err
 		}
 
 		//https://stackoverflow.com/questions/30552447/how-to-set-which-ip-to-use-for-a-http-request
@@ -296,6 +319,19 @@ func loginFromIP(scheme, server, rawUsername, rawPassword, localIPv4 string, str
 			ExpectContinueTimeout: 1 * time.Second,
 		}
 
+	}
+	return client, nil
+}
+
+func loginFromIP(scheme, server, rawUsername, rawPassword, localIPv4 string, strict bool) (err error) {
+	challenge, err := getChallenge(scheme, server, rawUsername, localIPv4, strict)
+	if err != nil {
+		return err
+	}
+
+	client, err := getHttpClient(strict, localIPv4)
+	if err != nil {
+		return err
 	}
 
 	req, err := http.NewRequest("GET", scheme+"://"+server+"/cgi-bin/srun_portal", nil)

@@ -22,14 +22,19 @@ func version() {
 }
 
 func main() {
-	var FlagConfigFile string
-	flag.StringVar(&FlagConfigFile, "config", "", "the config.json file. Leave it blank to use the interact mode.")
 	var FlagShowHelp bool
-	flag.BoolVar(&FlagShowHelp, "h", false, "show the help.")
+	flag.BoolVar(&FlagShowHelp, "h", false, "standalone: show the help.")
 	var FlagShowVersion bool
-	flag.BoolVar(&FlagShowVersion, "v", false, "show the version")
+	flag.BoolVar(&FlagShowVersion, "v", false, "standalone: show the version")
+
+	var FlagConfigFile string
+	flag.StringVar(&FlagConfigFile, "c", "", "the config.json file. Leave it blank to use the interact mode.")
 	var FlagNoAttribute bool
-	flag.BoolVar(&FlagNoAttribute, "no_attribute", false, "output log without attributes. Turn it on when running as a systemd service.")
+	flag.BoolVar(&FlagNoAttribute, "m", false, "option: output log without attributes. Turn it on when running as a systemd service.")
+
+	var FlagIPDetect bool
+	flag.BoolVar(&FlagIPDetect, "a", false, "standalone: detect the IP address from the authenticate server. Useful when behind a NAT router.")
+
 	flag.Parse()
 
 	version()
@@ -56,6 +61,7 @@ func main() {
 		panic(err)
 	}
 	//required arguments
+	checkInterval(&Settings)
 	err = checkAuthServer(&Settings)
 	err = checkPassword(&Settings)
 	err = checkScheme(&Settings)
@@ -66,6 +72,20 @@ func main() {
 
 	if Settings.Network.CustomIP == "" && Settings.Network.Interface == "" {
 		panic("You need to specify either the local IP or the interface name.")
+	}
+
+	if FlagIPDetect {
+		ret, err := getIPFromChallenge(Settings.Account.Scheme,
+			Settings.Account.AuthServer,
+			Settings.Account.Username,
+			Settings.Network.CustomIP,
+			Settings.Network.Interface,
+			Settings.Control.StrictMode)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println(ret)
+		return
 	}
 
 	//write log to stdout

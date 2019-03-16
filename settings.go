@@ -28,6 +28,7 @@ type Log struct {
 type Network struct {
 	Interface string `json:"interface"`
 	CustomIP  string `json:"custom_ip"`
+	DetectIP  bool   `json:"detect_ip"`
 }
 
 type Control struct {

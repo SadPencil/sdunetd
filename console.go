@@ -170,7 +170,7 @@ func cartman() {
 					fmt.Println(err)
 					saveFile = false
 				} else {
-					fmt.Println(`File saved. You may re-run the program with the "-config" flag.`)
+					fmt.Println(`File saved. You may re-run the program with the "-c" flag.`)
 				}
 			}
 		}

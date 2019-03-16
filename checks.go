@@ -62,3 +62,8 @@ func checkScheme(settings *Settings) (err error) {
 	}
 	return nil
 }
+func checkInterval(settings *Settings) {
+	if settings.Control.Interval == 0 {
+		settings.Control.Interval = DEFAULT_INTERVAL
+	}
+}
