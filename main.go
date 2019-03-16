@@ -72,7 +72,7 @@ func main() {
 	}
 
 	if FlagOneshoot {
-		log.Println("Log in via web portal...")
+		fmt.Println("Log in via web portal...")
 		err := login(Settings.Account.Scheme,
 			Settings.Account.AuthServer,
 			Settings.Account.Username,
