@@ -109,7 +109,7 @@ func cartman() {
 			} else {
 				ips = append(ips, ip)
 				interfaceStrings = append(interfaceStrings, "")
-				fmt.Println(len(ips)-1, "\t", ip, "\t", "[Auto detect]")
+				fmt.Println("["+fmt.Sprint(len(ips)-1)+"]", "\t", ip, "\t", "[Auto detect]")
 			}
 		}
 
@@ -123,7 +123,7 @@ func cartman() {
 			if err == nil {
 				ips = append(ips, ip)
 				interfaceStrings = append(interfaceStrings, interfaceWtf.Name)
-				fmt.Println(len(ips)-1, "\t", ip, "\t", interfaceWtf.Name)
+				fmt.Println("["+fmt.Sprint(len(ips)-1)+"]", "\t", ip, "\t", interfaceWtf.Name)
 			}
 		}
 
