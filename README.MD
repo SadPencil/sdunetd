@@ -19,6 +19,7 @@ You can also compile by your self.
 ```bash
 git clone https://github.com/SadPencil/sdunetd
 cd sdunetd
+go get -v
 GOOS=linux GOARCH=amd64 go build
 ```
 
