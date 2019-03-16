@@ -261,14 +261,19 @@ func getChallenge(scheme, server, rawUsername, localIPv4 string, strict bool) (c
 }
 
 func getIPFromChallenge(scheme, server, rawUsername string, localIP string, interfaceWtf string, strict bool) (IP string, err error) {
-	if localIP == "" {
-		localIP, err = GetIPFromInterface(interfaceWtf)
+	var ip string
+	if interfaceWtf == "" {
+		ip = localIP
+	} else if localIP == "" {
+		ip, err = GetIPFromInterface(interfaceWtf)
 		if err != nil {
 			return "", err
 		}
+	} else {
+		ip = ""
 	}
 
-	output, err := getRawChallenge(scheme, server, rawUsername, localIP, strict, true)
+	output, err := getRawChallenge(scheme, server, rawUsername, ip, strict, true)
 	if err != nil {
 		return "", err
 	}
@@ -277,30 +282,27 @@ func getIPFromChallenge(scheme, server, rawUsername string, localIP string, inte
 }
 
 func login(scheme, server, rawUsername, rawPassword, localIPv4, interfaceWtf string, strict bool, detectIPFromServer bool) (err error) {
-	var IP string = localIPv4
-	if localIPv4 == "" {
-		IP, err = GetIPFromInterface(interfaceWtf)
+	var ip string
+	if interfaceWtf == "" {
+		ip = localIPv4
+	} else if localIPv4 == "" {
+		ip, err = GetIPFromInterface(interfaceWtf)
 		if err != nil {
 			return err
 		}
+	} else {
+		ip = ""
 	}
 
 	if detectIPFromServer {
-		IP, err = getIPFromChallenge(scheme, server, rawUsername, IP, "", strict)
+		ip, err = getIPFromChallenge(scheme, server, rawUsername, ip, "", strict)
 		if err != nil {
 			return err
 		}
 	}
 
-	return loginFromIP(scheme, server, rawUsername, rawPassword, IP, strict)
+	return loginFromIP(scheme, server, rawUsername, rawPassword, ip, strict)
 
-}
-func loginFromInterface(scheme, server, rawUsername, rawPassword, interfaceWtf string, strict bool) (err error) {
-	localIP, err := GetIPFromInterface(interfaceWtf)
-	if err != nil {
-		return err
-	}
-	return loginFromIP(scheme, server, rawUsername, rawPassword, localIP, strict)
 }
 
 func getHttpClient(strict bool, localIPv4 string) (client http.Client, err error) {
