@@ -25,7 +25,7 @@ func cartman() {
 	reader := bufio.NewReader(os.Stdin)
 
 	fmt.Println("Looks like the config file doesn't exist.")
-	fmt.Println("That's okay if you just want to do a Portal authentication for once, or you want me to help you generate a config file.")
+	fmt.Println("That's okay if you just want to do a Portal authentication for once, or to generate a config file.")
 	fmt.Println("A few questions need to be answered. Leave it blank if you want the default answer in the bracket.")
 
 	var err error
@@ -77,7 +77,7 @@ func cartman() {
 		}
 	}
 	for {
-		fmt.Println("Question 4. Is the authenticate server use HTTP protocol, or HTTPS? [" + DEFAULT_AUTH_SCHEME + "]")
+		fmt.Println("Question 4. Does the authenticate server use HTTP protocol, or HTTPS? [" + DEFAULT_AUTH_SCHEME + "]")
 		Settings.Account.Scheme, err = reader.ReadString('\n')
 		if err != nil {
 			panic(err)
@@ -119,7 +119,7 @@ func cartman() {
 		}
 
 		for _, interfaceWtf := range interfaces {
-			ip, err := GetIPFromInterface(interfaceWtf.Name)
+			ip, err := getIPFromInterface(interfaceWtf.Name)
 			if err == nil {
 				ips = append(ips, ip)
 				interfaceStrings = append(interfaceStrings, interfaceWtf.Name)
@@ -172,7 +172,7 @@ func cartman() {
 	}
 	var saveFile bool
 	for {
-		fmt.Println("That's all the information needed. Would you like to save it to a config file? [y/n]")
+		fmt.Println("That's all the information needed. Would you like to save it to a configuration file? [y/n]")
 		yesOrNoStr, err := reader.ReadString('\n')
 		if err != nil {
 			panic(err)

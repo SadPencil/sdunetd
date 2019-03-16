@@ -265,7 +265,7 @@ func getIPFromChallenge(scheme, server, rawUsername string, localIP string, inte
 	if interfaceWtf == "" {
 		ip = localIP
 	} else if localIP == "" {
-		ip, err = GetIPFromInterface(interfaceWtf)
+		ip, err = getIPFromInterface(interfaceWtf)
 		if err != nil {
 			return "", err
 		}
@@ -286,7 +286,7 @@ func login(scheme, server, rawUsername, rawPassword, localIPv4, interfaceWtf str
 	if interfaceWtf == "" {
 		ip = localIPv4
 	} else if localIPv4 == "" {
-		ip, err = GetIPFromInterface(interfaceWtf)
+		ip, err = getIPFromInterface(interfaceWtf)
 		if err != nil {
 			return err
 		}
@@ -389,8 +389,8 @@ func loginFromIP(scheme, server, rawUsername, rawPassword, localIPv4 string, str
 	return nil
 }
 
-//GetIPFromInterface gets an IPv4 address from the specific interface
-func GetIPFromInterface(interfaceWtf string) (string, error) {
+//getIPFromInterface gets an IPv4 address from the specific interface
+func getIPFromInterface(interfaceWtf string) (string, error) {
 	ifaces, err := net.InterfaceByName(interfaceWtf)
 	if err != nil {
 		log.Println("Can't get network device "+interfaceWtf+".", err)
