@@ -74,10 +74,6 @@ func main() {
 		panic(err)
 	}
 
-	if Settings.Network.CustomIP == "" && Settings.Network.Interface == "" {
-		panic("You need to specify either the local IP or the interface name.")
-	}
-
 	if FlagIPDetect {
 		ret, err := getIPFromChallenge(Settings.Account.Scheme,
 			Settings.Account.AuthServer,
