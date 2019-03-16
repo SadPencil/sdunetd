@@ -33,6 +33,9 @@ func main() {
 	var FlagNoAttribute bool
 	flag.BoolVar(&FlagNoAttribute, "m", false, "option: output log without attributes. Turn it on when running as a systemd service.")
 
+	var FlagIPDetect bool
+	flag.BoolVar(&FlagIPDetect, "a", false, "standalone: detect the IP address from the authenticate server. Useful when behind a NAT router.")
+
 	var FlagOneshoot bool
 	flag.BoolVar(&FlagOneshoot, "f", false, "standalone: login to the network, regardless of whether Internet is available.")
 
@@ -69,6 +72,20 @@ func main() {
 	err = checkUsername(&Settings)
 	if err != nil {
 		panic(err)
+	}
+
+	if FlagIPDetect {
+		ret, err := getIPFromChallenge(Settings.Account.Scheme,
+			Settings.Account.AuthServer,
+			Settings.Account.Username,
+			Settings.Network.CustomIP,
+			Settings.Network.Interface,
+			Settings.Control.StrictMode)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println(ret)
+		return
 	}
 
 	if FlagOneshoot {
