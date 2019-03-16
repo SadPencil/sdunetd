@@ -206,7 +206,8 @@ func cartman() {
 				Settings.Account.Password,
 				Settings.Network.CustomIP,
 				Settings.Network.Interface,
-				false)
+				Settings.Control.StrictMode,
+				Settings.Network.DetectIP)
 			if err != nil {
 				log.Println("Login failed.", err)
 			}

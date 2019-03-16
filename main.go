@@ -29,8 +29,12 @@ func main() {
 
 	var FlagConfigFile string
 	flag.StringVar(&FlagConfigFile, "c", "", "the config.json file. Leave it blank to use the interact mode.")
+
 	var FlagNoAttribute bool
 	flag.BoolVar(&FlagNoAttribute, "m", false, "option: output log without attributes. Turn it on when running as a systemd service.")
+
+	var FlagOneshoot bool
+	flag.BoolVar(&FlagOneshoot, "f", false, "standalone: login to the network, regardless of whether Internet is available.")
 
 	var FlagIPDetect bool
 	flag.BoolVar(&FlagIPDetect, "a", false, "standalone: detect the IP address from the authenticate server. Useful when behind a NAT router.")
@@ -88,6 +92,22 @@ func main() {
 		return
 	}
 
+	if FlagOneshoot {
+		log.Println("Log in via web portal...")
+		err := login(Settings.Account.Scheme,
+			Settings.Account.AuthServer,
+			Settings.Account.Username,
+			Settings.Account.Password,
+			Settings.Network.CustomIP,
+			Settings.Network.Interface,
+			Settings.Control.StrictMode,
+			Settings.Network.DetectIP)
+		if err != nil {
+			log.Println("Login failed.", err)
+		}
+		return
+	}
+
 	//write log to stdout
 	log.SetOutput(os.Stdout)
 
@@ -113,7 +133,9 @@ func main() {
 				Settings.Account.Username,
 				Settings.Account.Password,
 				Settings.Network.CustomIP,
-				Settings.Network.Interface, Settings.Control.StrictMode)
+				Settings.Network.Interface,
+				Settings.Control.StrictMode,
+				Settings.Network.DetectIP)
 			if err != nil {
 				log.Println("Login failed.", err)
 			}

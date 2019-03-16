@@ -209,7 +209,7 @@ func detectNetwork() bool {
 	return bytes.Compare(body, []byte("Microsoft Connect Test")) == 0
 }
 
-func getRawChallenge(scheme, server, rawUsername, localIPv4 string, strict bool) (challenge map[string]interface{}, err error) {
+func getRawChallenge(scheme, server, rawUsername, localIPv4 string, strict bool, doNotSendIP bool) (challenge map[string]interface{}, err error) {
 	client, err := getHttpClient(strict, localIPv4)
 	if err != nil {
 		return nil, err
@@ -223,7 +223,11 @@ func getRawChallenge(scheme, server, rawUsername, localIPv4 string, strict bool)
 
 	q := req.URL.Query()
 	q.Add("username", rawUsername)
-	q.Add("ip", localIPv4)
+	if doNotSendIP {
+		q.Add("ip", "")
+	} else {
+		q.Add("ip", localIPv4)
+	}
 	req.URL.RawQuery = q.Encode()
 
 	fmt.Println(req.URL.String())
@@ -234,10 +238,6 @@ func getRawChallenge(scheme, server, rawUsername, localIPv4 string, strict bool)
 
 	defer resp.Body.Close()
 	respBody, _ := ioutil.ReadAll(resp.Body)
-
-	//debug
-	fmt.Println(string(respBody))
-	//debug
 
 	if resp.StatusCode != 200 {
 		return nil, errors.New(resp.Status)
@@ -251,7 +251,7 @@ func getRawChallenge(scheme, server, rawUsername, localIPv4 string, strict bool)
 }
 
 func getChallenge(scheme, server, rawUsername, localIPv4 string, strict bool) (challenge string, err error) {
-	output, err := getRawChallenge(scheme, server, rawUsername, localIPv4, strict)
+	output, err := getRawChallenge(scheme, server, rawUsername, localIPv4, strict, true)
 	if err != nil {
 		return "", err
 	}
@@ -268,23 +268,32 @@ func getIPFromChallenge(scheme, server, rawUsername string, localIP string, inte
 		}
 	}
 
-	output, err := getRawChallenge(scheme, server, rawUsername, localIP, strict)
+	output, err := getRawChallenge(scheme, server, rawUsername, localIP, strict, true)
 	if err != nil {
 		return "", err
 	}
-	IP = output["challenge"].(string)
-	//fmt.Println(IP)
+	IP = output["client_ip"].(string)
 	return IP, nil
 }
 
-func login(scheme, server, rawUsername, rawPassword, localIPv4, interfaceWtf string, strict bool) (err error) {
-	if interfaceWtf == "" {
-		return loginFromIP(scheme, server, rawUsername, rawPassword, localIPv4, strict)
-	} else if localIPv4 == "" {
-		return loginFromInterface(scheme, server, rawUsername, rawPassword, interfaceWtf, strict)
-	} else {
-		return errors.New("no IP or interface specified")
+func login(scheme, server, rawUsername, rawPassword, localIPv4, interfaceWtf string, strict bool, detectIPFromServer bool) (err error) {
+	var IP string = localIPv4
+	if localIPv4 == "" {
+		IP, err = GetIPFromInterface(interfaceWtf)
+		if err != nil {
+			return err
+		}
 	}
+
+	if detectIPFromServer {
+		IP, err = getIPFromChallenge(scheme, server, rawUsername, IP, "", strict)
+		if err != nil {
+			return err
+		}
+	}
+
+	return loginFromIP(scheme, server, rawUsername, rawPassword, IP, strict)
+
 }
 func loginFromInterface(scheme, server, rawUsername, rawPassword, interfaceWtf string, strict bool) (err error) {
 	localIP, err := GetIPFromInterface(interfaceWtf)
