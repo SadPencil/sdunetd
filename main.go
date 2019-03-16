@@ -36,9 +36,6 @@ func main() {
 	var FlagOneshoot bool
 	flag.BoolVar(&FlagOneshoot, "f", false, "standalone: login to the network, regardless of whether Internet is available.")
 
-	var FlagIPDetect bool
-	flag.BoolVar(&FlagIPDetect, "a", false, "standalone: detect the IP address from the authenticate server. Useful when behind a NAT router.")
-
 	flag.Parse()
 
 	version()
@@ -74,20 +71,6 @@ func main() {
 		panic(err)
 	}
 
-	if FlagIPDetect {
-		ret, err := getIPFromChallenge(Settings.Account.Scheme,
-			Settings.Account.AuthServer,
-			Settings.Account.Username,
-			Settings.Network.CustomIP,
-			Settings.Network.Interface,
-			Settings.Control.StrictMode)
-		if err != nil {
-			panic(err)
-		}
-		fmt.Println(ret)
-		return
-	}
-
 	if FlagOneshoot {
 		log.Println("Log in via web portal...")
 		err := login(Settings.Account.Scheme,
@@ -117,8 +100,9 @@ func main() {
 		}
 		log.SetOutput(logFile)
 	}
-
-	log.SetFlags(0)
+	if FlagNoAttribute {
+		log.SetFlags(0)
+	}
 
 	//loop
 	for {
