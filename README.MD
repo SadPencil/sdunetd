@@ -77,7 +77,7 @@ WantedBy=multi-user.target
 START=60
  
 start() { 
-/usr/local/bin/sdunetd -config /etc/sdunetd/config.json
+/usr/local/bin/sdunetd -config /etc/sdunetd/config.json >/dev/null 2>&1 &
 }
 
 stop() { 
