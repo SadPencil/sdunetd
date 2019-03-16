@@ -1,61 +1,41 @@
 # sdunetd
-
-A very simple cross-platform srun3000 portal client.
-
+Embedded SRUN3000 Portal Client for SDU-Qingdao
+_________
 Ver 1.1 is suitable for Shandong University, Qingdao Campus, up to 2018.
 
 Ver 2.0-RC is probably suitable for Shandong University, Qingdao Campus, since March 2019.
-
-Static builds are available [here](https://github.com/SadPencil/sdunetd/releases).
 
 ## Copyright
 Copyright © 2018-2019 Sad Pencil &lt;me@pencil.live&gt;
 
 MIT License
 
-## Installation on OpenWRT
+## Get the executable
 
-1. Copy the executable to `/usr/bin`, and rename it to `sdunetd`
+Static builds are available [here](https://github.com/SadPencil/sdunetd/releases).
 
-  - Note: You MUST choose proper builds according to `/proc/cpuinfo`.
+You can also compile by your self.
 
-  - Note: It might take a few minutes to copy a large file.
-
-  - Note: If the static builds are too large for a tiny ROM, you can either use `upx` to compress the executeable, or compiles by yourself with environment variable `CGO_ENABLED=1`, which relys on `libc`.
-
-2. `chmod +x /usr/bin/sdunetd`
-
-3. `touch /etc/init.d/sdunetd`
-
-4. `chmod +x /etc/init.d/sdunetd`
-
-5. `vi /etc/init.d/sdunetd`
-
-```shell
-#!/bin/sh /etc/rc.common 
-
-START=60
- 
-start() { 
-/usr/bin/sdunetd -s SERVER_IP -u USERNAME -p PASSWORD -interface INTERFACE -log /tmp/sdunetd.log &
-} 
-
-stop() { 
-killall sdunetd
-}
+```bash
+go get -v github.com/SadPencil/sdunetd
+go build github.com/SadPencil/sdunetd
 ```
 
-Replace `SERVER_IP` `USERNAME` `PASSWORD` `INTERFACE` with real ones. `SERVER_IP` is `101.76.193.1` for SDU-Qingdao.
+Rename the executable to `sdunetd`.
 
-`INTERFACE` is the name of your network interface, e.g, `eth0` `eth0.1` `eno1` `Local Area Connection`.
+## Generate a configuration file
 
-6. `/etc/init.d/sdunetd enable`
-7. `/etc/init.d/sdunetd start`
+Run the program without any parameters and it will guide you to create a configuration file.
+
+```bash
+./sdunetd
+```
 
 ## Installation on Linux (based on systemd)
-- Step 1 to 4 is the same with last section.
-
-5. `vi /etc/systemd/system/sdunetd.service`
+1. Copy the executable to `/usr/local/bin`, and rename it to `sdunetd`
+2. `chmod +x /usr/local/bin/sdunetd`
+3. Create a configuration file at `/etc/sdunetd/config.json`
+4. `vi /etc/systemd/system/sdunetd.service`
 
 ```ini
 [Unit]
@@ -66,19 +46,47 @@ Wants=network.target
 [Service]
 Type=simple
 PrivateTmp=true
-ExecStart=/usr/bin/sdunetd -s SERVER_IP -u USERNAME -p PASSWORD -interface INTERFACE
+ExecStart=/usr/local/bin/sdunetd -config /etc/sdunetd/config.json -m
 Restart=always
 
 [Install]
 WantedBy=multi-user.target
 ```
-Replace `SERVER_IP` `USERNAME` `PASSWORD` `INTERFACE` with real ones. `SERVER_IP` is `101.76.193.1` for SDU-Qingdao.
-
-`INTERFACE` is the name of your network interface, e.g, `eth0` `eth0.1` `eno1` `Local Area Connection`.
-
 6. `systemctl daemon-reload`
 7. `systemctl enable sdunetd`
 8. `systemctl start sdunetd`
+
+## Installation on OpenWRT
+
+1. Copy the executable to `/usr/local/bin`, and rename it to `sdunetd`
+
+  - Note: You MUST choose proper builds according to `/proc/cpuinfo`.
+
+  - Note: It might take a few minutes to copy a large file if `squashfs` is enabled on the router.
+
+
+2. `chmod +x /usr/local/bin/sdunetd`
+3. Create a configuration file at `/etc/sdunetd/config.json`
+4. `touch /etc/init.d/sdunetd`
+5. `chmod +x /etc/init.d/sdunetd`
+6. `vi /etc/init.d/sdunetd`
+
+```shell
+#!/bin/sh /etc/rc.common
+
+START=60
+ 
+start() { 
+/usr/local/bin/sdunetd -config /etc/sdunetd/config.json >/dev/null 2>&1 &
+}
+
+stop() { 
+killall sdunetd
+}
+```
+
+7. `/etc/init.d/sdunetd enable`
+8. `/etc/init.d/sdunetd start`
 
 ## Installation on Windows
 Although it is okay to create a shortcut at `startup` folder, it is better to create a service. `srvany` is a 32-bit program provided by Microsoft to let any program become a service, and you can get a 64-bit implementation at repo [birkett/srvany-ng](https://github.com/birkett/srvany-ng.git).
