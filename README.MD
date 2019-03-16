@@ -46,7 +46,7 @@ Wants=network.target
 [Service]
 Type=simple
 PrivateTmp=true
-ExecStart=/usr/local/bin/sdunetd -config /etc/sdunetd/config.json -m
+ExecStart=/usr/local/bin/sdunetd -c /etc/sdunetd/config.json -m
 Restart=always
 
 [Install]
@@ -77,7 +77,7 @@ WantedBy=multi-user.target
 START=60
  
 start() { 
-/usr/local/bin/sdunetd -config /etc/sdunetd/config.json >/dev/null 2>&1 &
+/usr/local/bin/sdunetd -c /etc/sdunetd/config.json >/dev/null 2>&1 &
 }
 
 stop() { 
