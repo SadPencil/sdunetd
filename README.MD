@@ -3,7 +3,7 @@ Embedded SRUN3000 Portal Client for SDU-Qingdao
 _________
 Ver 1.1 is suitable for Shandong University, Qingdao Campus, up to 2018.
 
-Ver 2.0-RC is probably suitable for Shandong University, Qingdao Campus, since March 2019.
+Ver 2.0 is suitable for Shandong University, Qingdao Campus, since March 2019.
 
 ## Copyright
 Copyright © 2018-2019 Sad Pencil &lt;me@pencil.live&gt;
@@ -16,13 +16,6 @@ Static builds are available [here](https://github.com/SadPencil/sdunetd/releases
 
 You can also compile by your self.
 
-```bash
-git clone https://github.com/SadPencil/sdunetd
-cd sdunetd
-go get -v
-GOOS=linux GOARCH=amd64 go build
-```
-
 Rename the executable to `sdunetd`.
 
 ## Generate a configuration file
@@ -34,6 +27,7 @@ Run the program without any parameters and it will guide you to create a configu
 ```
 
 ## Installation on Linux (based on systemd)
+
 1. Copy the executable to `/usr/local/bin`, and rename it to `sdunetd`
 2. `chmod +x /usr/local/bin/sdunetd`
 3. Create a configuration file at `/etc/sdunetd/config.json`
@@ -93,9 +87,38 @@ killall sdunetd
 ## Installation on Windows
 Although it is okay to create a shortcut at `startup` folder, it is better to create a service. `srvany` is a 32-bit program provided by Microsoft to let any program become a service, and you can get a 64-bit implementation at repo [birkett/srvany-ng](https://github.com/birkett/srvany-ng.git).
 
+Example:
+
+
+
+Suppose `sdunetd` is placed at `C:\Program Files\sdunetd\sdunetd.exe` and the configuration file is located at `C:\Program Files\sdunetd\config.json`.
+
 ## Dynamic DNS
 We recommend [TimothyYe/GoDNS](https://github.com/TimothyYe/godns). In the configuration file, set `ip_interface` to your network interface to help GoDNS get the real IPv4 address. Click [here](https://github.com/TimothyYe/godns#get-an-ip-address-from-the-interface) to get detailed help.
 
 However, you can't use GoDNS behind a NAT router because the Internet traffic at SDU-Qingdao is being masqueraded, so that online services can't determine your real IPv4 address.
 
 sdunetd is able to detect your real IPv4 address at SDU-Qingdao no matter you are under a router or not. So, if you do need this feature, open an issue at [sdunetd](https://github.com/SadPencil/sdunetd/issues) so that we can fork a special version of GoDNS which is suitable for SDU-Qingdao.
+
+## How to Compile
+
+```bash
+git clone https://github.com/SadPencil/sdunetd
+cd sdunetd
+go get -v
+CGO_ENABLED=0 GOOS=linux GOARCH=arm go build -ldflags=all="-s -w" -o build/sdunetd-linux-arm
+CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags=all="-s -w" -o build/sdunetd-linux-arm64
+CGO_ENABLED=0 GOOS=linux GOARCH=386 go build -ldflags=all="-s -w" -o build/sdunetd-linux-386
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags=all="-s -w" -o build/sdunetd-linux-amd64
+CGO_ENABLED=0 GOMIPS=softfloat GOOS=linux GOARCH=mips go build -ldflags=all="-s -w" -o build/sdunetd-linux-mips-softfloat
+CGO_ENABLED=0 GOOS=linux GOARCH=mips64 go build -ldflags=all="-s -w" -o build/sdunetd-linux-mips64
+CGO_ENABLED=0 GOMIPS=softfloat GOOS=linux GOARCH=mipsle go build -ldflags=all="-s -w" -o build/sdunetd-linux-mipsle-softfloat
+CGO_ENABLED=0 GOOS=linux GOARCH=mips64le go build -ldflags=all="-s -w" -o build/sdunetd-linux-mips64le
+CGO_ENABLED=0 GOOS=linux GOARCH=arm go build -ldflags=all="-s -w" -o build/sdunetd-linux-arm
+CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags=all="-s -w" -o build/sdunetd-linux-arm64
+CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags=all="-s -w" -o build/sdunetd-windows-amd64.exe
+CGO_ENABLED=0 GOOS=windows GOARCH=386 go build -ldflags=all="-s -w" -o build/sdunetd-windows-386.exe
+CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags=all="-s -w" -o build/sdunetd-darwin-amd64
+CGO_ENABLED=0 GOOS=freebsd GOARCH=amd64 go build -ldflags=all="-s -w" -o build/sdunetd-freebsd-amd64
+upx --best --ultra-brute build/*
+```
