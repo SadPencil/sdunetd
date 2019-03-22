@@ -89,9 +89,23 @@ Although it is okay to create a shortcut at `startup` folder, it is better to cr
 
 Example:
 
+0. Suppose `sdunetd.exe` `config.json` and `srvany.exe` are all placed at `C:\Program Files\sdunetd`
 
+1. Create a service named `sdunetd`
 
-Suppose `sdunetd` is placed at `C:\Program Files\sdunetd\sdunetd.exe` and the configuration file is located at `C:\Program Files\sdunetd\config.json`.
+```shell
+sc create "sdunetd" start= auto binPath= "C:\Program Files\sdunetd\sdunetd.exe"
+```
+
+2. Import the following to the registry
+
+```ini
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\sdunetd\Parameters]
+"Application"="C:\\Program Files\\sdunetd\\sdunetd.exe"
+"AppDirectory"="C:\\Program Files\\sdunetd"
+"AppParameters"="-c \"C:\\Program Files\\sdunetd\\config.json\""
+```
+
 
 ## Dynamic DNS
 We recommend [TimothyYe/GoDNS](https://github.com/TimothyYe/godns). In the configuration file, set `ip_interface` to your network interface to help GoDNS get the real IPv4 address. Click [here](https://github.com/TimothyYe/godns#get-an-ip-address-from-the-interface) to get detailed help.
