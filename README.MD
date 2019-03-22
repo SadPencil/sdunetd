@@ -1,7 +1,7 @@
 # sdunetd
 Embedded SRUN3000 Portal Client for SDU-Qingdao
 _________
-Ver 1.1 is suitable for Shandong University, Qingdao Campus, up to 2018.
+Ver 1.1 is once suitable for Shandong University, Qingdao Campus, up to 2018. No longer supported.
 
 Ver 2.0 is suitable for Shandong University, Qingdao Campus, since March 2019.
 
@@ -93,7 +93,7 @@ Example:
 
 1. Create a service named `sdunetd`
 
-```shell
+```winbatch
 sc create "sdunetd" start= auto binPath= "C:\Program Files\sdunetd\sdunetd.exe"
 ```
 
@@ -112,7 +112,7 @@ We recommend [TimothyYe/GoDNS](https://github.com/TimothyYe/godns). In the confi
 
 However, you can't use GoDNS behind a NAT router because the Internet traffic at SDU-Qingdao is being masqueraded, so that online services can't determine your real IPv4 address.
 
-sdunetd is able to detect your real IPv4 address at SDU-Qingdao no matter you are under a router or not. So, if you do need this feature, open an issue at [sdunetd](https://github.com/SadPencil/sdunetd/issues) so that we can fork a special version of GoDNS which is suitable for SDU-Qingdao.
+`sdunetd` is able to detect your real IPv4 address at SDU-Qingdao no matter you are under a router or not. So, if you do need this feature, open an issue at [sdunetd](https://github.com/SadPencil/sdunetd/issues) so that we can fork a special version of GoDNS which is suitable for SDU-Qingdao.
 
 ## How to Compile
 
