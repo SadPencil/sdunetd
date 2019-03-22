@@ -26,14 +26,13 @@ type Log struct {
 }
 
 type Network struct {
-	Interface string `json:"interface"`
-	CustomIP  string `json:"custom_ip"`
-	DetectIP  bool   `json:"detect_ip"`
+	Interface  string `json:"interface"`
+	CustomIP   string `json:"custom_ip"`
+	StrictMode bool   `json:"strict"`
 }
 
 type Control struct {
-	StrictMode bool  `json:"strict"`
-	Interval   int32 `json:"interval"`
+	Interval int32 `json:"interval"`
 }
 
 type Settings struct {

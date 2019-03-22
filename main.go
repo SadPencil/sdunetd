@@ -21,6 +21,39 @@ func version() {
 
 }
 
+func login(settings *Settings) (err error) {
+
+	client, err := getHttpClient(settings.Network.StrictMode, settings.Network.CustomIP, settings.Network.Interface)
+	if err != nil {
+		return err
+	}
+
+	//if detectIPFromServer {
+	sduIPv4, err := getSduIPv4FromUserInfo(settings.Account.Scheme, settings.Account.AuthServer, &client)
+	if err != nil {
+		return err
+	}
+	//}
+
+	return loginDigest(settings.Account.Scheme, settings.Account.AuthServer, settings.Account.Username, settings.Account.Password, sduIPv4, &client)
+
+}
+
+func detectNetwork(settings *Settings) bool {
+	client, err := getHttpClient(settings.Network.StrictMode, settings.Network.CustomIP, settings.Network.Interface)
+	if err != nil {
+		log.Println("[ERROR]", err)
+		return false
+	}
+	ret, err := getSduIsLogined(settings.Account.Scheme, settings.Account.AuthServer, &client)
+	if err != nil {
+		log.Println("[ERROR]", err)
+		return false
+	} else {
+		return ret
+	}
+}
+
 func main() {
 	var FlagShowHelp bool
 	flag.BoolVar(&FlagShowHelp, "h", false, "standalone: show the help.")
@@ -74,30 +107,21 @@ func main() {
 		panic(err)
 	}
 
-	if FlagIPDetect {
-		ret, err := getIPFromChallenge(Settings.Account.Scheme,
-			Settings.Account.AuthServer,
-			Settings.Account.Username,
-			Settings.Network.CustomIP,
-			Settings.Network.Interface,
-			Settings.Control.StrictMode)
-		if err != nil {
-			panic(err)
-		}
-		fmt.Println(ret)
-		return
-	}
+	//client, err := getHttpClient(Settings.Control.StrictMode, Settings.Network.CustomIP, Settings.Network.Interface)
+
+	//if FlagIPDetect {
+	//	ret, err := getSduIPv4FromUserInfo(Settings.Account.Scheme,
+	//		Settings.Account.AuthServer, &client)
+	//	if err != nil {
+	//		panic(err)
+	//	}
+	//	fmt.Println(ret)
+	//	return
+	//}
 
 	if FlagOneshoot {
 		fmt.Println("Log in via web portal...")
-		err := login(Settings.Account.Scheme,
-			Settings.Account.AuthServer,
-			Settings.Account.Username,
-			Settings.Account.Password,
-			Settings.Network.CustomIP,
-			Settings.Network.Interface,
-			Settings.Control.StrictMode,
-			Settings.Network.DetectIP)
+		err := login(&Settings)
 		if err != nil {
 			log.Println("Login failed.", err)
 		}
@@ -123,21 +147,14 @@ func main() {
 
 	//loop
 	for {
-		if !detectNetwork() {
+		if !detectNetwork(&Settings) {
 			log.Println("Network is down. Log in via web portal...")
-			err := login(Settings.Account.Scheme,
-				Settings.Account.AuthServer,
-				Settings.Account.Username,
-				Settings.Account.Password,
-				Settings.Network.CustomIP,
-				Settings.Network.Interface,
-				Settings.Control.StrictMode,
-				Settings.Network.DetectIP)
+			err := login(&Settings)
 			if err != nil {
 				log.Println("Login failed.", err)
 			}
 			time.Sleep(time.Duration(5) * time.Second)
-			if !detectNetwork() {
+			if !detectNetwork(&Settings) {
 				log.Println("Network is still down. Retry after", Settings.Control.Interval, " seconds.")
 			} else {
 				log.Println("Network is up.")
