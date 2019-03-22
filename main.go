@@ -29,7 +29,7 @@ func login(settings *Settings) (err error) {
 	}
 
 	//if detectIPFromServer {
-	sduIPv4, err := getSduIPv4FromUserInfo(settings.Account.Scheme, settings.Account.AuthServer, &client)
+	_, sduIPv4, err := getSduUserInfo(settings.Account.Scheme, settings.Account.AuthServer, &client)
 	if err != nil {
 		return err
 	}
@@ -45,11 +45,12 @@ func detectNetwork(settings *Settings) bool {
 		log.Println("[ERROR]", err)
 		return false
 	}
-	ret, err := getSduIsLogined(settings.Account.Scheme, settings.Account.AuthServer, &client)
+	ret, ipv4, err := getSduUserInfo(settings.Account.Scheme, settings.Account.AuthServer, &client)
 	if err != nil {
 		log.Println("[ERROR]", err)
 		return false
 	} else {
+		log.Println("Logined to sdunet. IP Address:", ipv4)
 		return ret
 	}
 }
@@ -107,17 +108,17 @@ func main() {
 		panic(err)
 	}
 
-	//client, err := getHttpClient(Settings.Control.StrictMode, Settings.Network.CustomIP, Settings.Network.Interface)
+	if FlagIPDetect {
+		client, err := getHttpClient(Settings.Network.StrictMode, Settings.Network.CustomIP, Settings.Network.Interface)
 
-	//if FlagIPDetect {
-	//	ret, err := getSduIPv4FromUserInfo(Settings.Account.Scheme,
-	//		Settings.Account.AuthServer, &client)
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//	fmt.Println(ret)
-	//	return
-	//}
+		_, ret, err := getSduUserInfo(Settings.Account.Scheme,
+			Settings.Account.AuthServer, &client)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println(ret)
+		return
+	}
 
 	if FlagOneshoot {
 		fmt.Println("Log in via web portal...")

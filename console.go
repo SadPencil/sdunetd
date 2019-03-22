@@ -64,7 +64,7 @@ func cartman() {
 	}
 
 	for {
-		fmt.Println("Question 3. What's your school's authenticate server's ip address? [" + DEFAULT_AUTH_SERVER + "]")
+		fmt.Println("Question 3. What's the authenticate server's ip address? [" + DEFAULT_AUTH_SERVER + "]")
 		fmt.Println("Hint: You can also write down the server's FQDN if necessary.")
 		Settings.Account.AuthServer, err = reader.ReadString('\n')
 		if err != nil {
@@ -97,7 +97,7 @@ func cartman() {
 		var ips []string
 		var interfaceStrings []string
 		{
-			ip, err := getSduIPv4FromUserInfo(Settings.Account.Scheme,
+			_, ip, err := getSduUserInfo(Settings.Account.Scheme,
 				Settings.Account.AuthServer, &http.Client{})
 
 			//ip, err := getIPFromChallenge(Settings.Account.Scheme,

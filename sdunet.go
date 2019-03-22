@@ -277,24 +277,15 @@ func getRawChallenge(scheme, server, rawUsername, sduIPv4 string, client *http.C
 	return challenge, nil
 }
 
-func getSduIsLogined(scheme, server string, client *http.Client) (logined bool, err error) {
+func getSduUserInfo(scheme, server string, client *http.Client) (logined bool, sduIPv4 string, err error) {
 	output, err := getRawUserInfo(scheme, server, client)
 	if err != nil {
-		return false, err
+		return false, "", err
 	}
 	errorStr := output["error"].(string)
-	//fmt.Println(sduIPv4)
-	return errorStr == "ok", nil
-}
-
-func getSduIPv4FromUserInfo(scheme, server string, client *http.Client) (sduIPv4 string, err error) {
-	output, err := getRawUserInfo(scheme, server, client)
-	if err != nil {
-		return "", err
-	}
 	sduIPv4 = output["online_ip"].(string)
 	//fmt.Println(sduIPv4)
-	return sduIPv4, nil
+	return errorStr == "ok", sduIPv4, nil
 }
 func getChallengeID(scheme, server, rawUsername, sduIPv4 string, client *http.Client) (challenge string, err error) {
 	output, err := getRawChallenge(scheme, server, rawUsername, sduIPv4, client)
@@ -339,10 +330,11 @@ func getHttpClient(strict bool, localIPv4, interfaceWtf string) (client http.Cli
 				return client, err
 			}
 		} else {
-			ipv4 = ""
+			ipv4 = localIPv4
 		}
 
-		localAddress, err := net.ResolveTCPAddr("tcp", ipv4)
+		//fmt.Println("STRICT MODE: ",ipv4+":0")
+		localAddress, err := net.ResolveTCPAddr("tcp", ipv4+":0")
 		if err != nil {
 			return client, err
 		}
