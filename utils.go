@@ -7,7 +7,12 @@ THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 
 package main
 
-import "os"
+import (
+	"errors"
+	"log"
+	"net"
+	"os"
+)
 
 // PathExists returns whether the given file or directory exists
 func PathExists(path string) (bool, error) {
@@ -19,4 +24,55 @@ func PathExists(path string) (bool, error) {
 		return false, nil
 	}
 	return true, err
+}
+
+//GetIPv4FromInterface gets an IPv4 address from the specific interface
+func GetIPv4FromInterface(interfaceWtf string) (string, error) {
+	ifaces, err := net.InterfaceByName(interfaceWtf)
+	if err != nil {
+		log.Println("Can't get network device "+interfaceWtf+".", err)
+		return "", err
+	}
+
+	addrs, err := ifaces.Addrs()
+	if err != nil {
+		log.Println("Can't get ip address from "+interfaceWtf+".", err)
+		return "", err
+	}
+
+	for _, addr := range addrs {
+		var ip net.IP
+		switch v := addr.(type) {
+		case *net.IPNet:
+			ip = v.IP
+		case *net.IPAddr:
+			ip = v.IP
+		}
+		if ip == nil {
+			continue
+		}
+
+		if !(ip.IsGlobalUnicast() && !(ip.IsUnspecified() || ip.IsMulticast() || ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() || ip.IsInterfaceLocalMulticast())) {
+			continue
+		}
+
+		//the code is not ready for updating an AAAA record
+		/*
+			if (isIPv4(ip.String())){
+				if (configuration.IPType=="IPv6"){
+					continue;
+				}
+			}else{
+				if (configuration.IPType!="IPv6"){
+					continue;
+				}
+			} */
+		if ip.To4() == nil {
+			continue
+		}
+
+		return ip.String(), nil
+
+	}
+	return "", errors.New("can't get a vaild address from " + interfaceWtf)
 }

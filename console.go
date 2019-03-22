@@ -14,6 +14,7 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -63,7 +64,7 @@ func cartman() {
 	}
 
 	for {
-		fmt.Println("Question 3. What's your school's authenticate server's ip address? [" + DEFAULT_AUTH_SERVER + "]")
+		fmt.Println("Question 3. What's the authenticate server's ip address? [" + DEFAULT_AUTH_SERVER + "]")
 		fmt.Println("Hint: You can also write down the server's FQDN if necessary.")
 		Settings.Account.AuthServer, err = reader.ReadString('\n')
 		if err != nil {
@@ -96,12 +97,15 @@ func cartman() {
 		var ips []string
 		var interfaceStrings []string
 		{
-			ip, err := getIPFromChallenge(Settings.Account.Scheme,
-				Settings.Account.AuthServer,
-				Settings.Account.Username,
-				"",
-				"",
-				false)
+			_, ip, err := getSduUserInfo(Settings.Account.Scheme,
+				Settings.Account.AuthServer, &http.Client{})
+
+			//ip, err := getIPFromChallenge(Settings.Account.Scheme,
+			//	Settings.Account.AuthServer,
+			//	Settings.Account.Username,
+			//	"",
+			//	"",
+			//	false)
 			if err != nil {
 				fmt.Println(err)
 				ips = append(ips, "")
@@ -119,7 +123,7 @@ func cartman() {
 		}
 
 		for _, interfaceWtf := range interfaces {
-			ip, err := getIPFromInterface(interfaceWtf.Name)
+			ip, err := GetIPv4FromInterface(interfaceWtf.Name)
 			if err == nil {
 				ips = append(ips, ip)
 				interfaceStrings = append(interfaceStrings, interfaceWtf.Name)
@@ -154,11 +158,11 @@ func cartman() {
 		if choiceID == 0 {
 			Settings.Network.Interface = ""
 			Settings.Network.CustomIP = ""
-			Settings.Network.DetectIP = true
+			Settings.Network.StrictMode = false
 		} else if choiceID > 0 && choiceID < len(interfaceStrings) {
 			Settings.Network.Interface = interfaceStrings[choiceID]
 			Settings.Network.CustomIP = ""
-			Settings.Network.DetectIP = false
+			Settings.Network.StrictMode = true
 		} else {
 			fmt.Println("You think I'm a retard? Fuck you, asshole.")
 			continue
@@ -246,14 +250,7 @@ func cartman() {
 		}
 		if yesOrNo {
 			fmt.Println("Log in via web portal...")
-			err := login(Settings.Account.Scheme,
-				Settings.Account.AuthServer,
-				Settings.Account.Username,
-				Settings.Account.Password,
-				Settings.Network.CustomIP,
-				Settings.Network.Interface,
-				Settings.Control.StrictMode,
-				Settings.Network.DetectIP)
+			err := login(&Settings)
 			if err != nil {
 				log.Println("Login failed.", err)
 			}

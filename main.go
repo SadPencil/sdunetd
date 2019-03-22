@@ -21,6 +21,40 @@ func version() {
 
 }
 
+func login(settings *Settings) (err error) {
+
+	client, err := getHttpClient(settings.Network.StrictMode, settings.Network.CustomIP, settings.Network.Interface)
+	if err != nil {
+		return err
+	}
+
+	//if detectIPFromServer {
+	_, sduIPv4, err := getSduUserInfo(settings.Account.Scheme, settings.Account.AuthServer, &client)
+	if err != nil {
+		return err
+	}
+	//}
+
+	return loginDigest(settings.Account.Scheme, settings.Account.AuthServer, settings.Account.Username, settings.Account.Password, sduIPv4, &client)
+
+}
+
+func detectNetwork(settings *Settings) bool {
+	client, err := getHttpClient(settings.Network.StrictMode, settings.Network.CustomIP, settings.Network.Interface)
+	if err != nil {
+		log.Println("[ERROR]", err)
+		return false
+	}
+	ret, ipv4, err := getSduUserInfo(settings.Account.Scheme, settings.Account.AuthServer, &client)
+	if err != nil {
+		log.Println("[ERROR]", err)
+		return false
+	} else {
+		log.Println("Logined to sdunet. IP Address:", ipv4)
+		return ret
+	}
+}
+
 func main() {
 	var FlagShowHelp bool
 	flag.BoolVar(&FlagShowHelp, "h", false, "standalone: show the help.")
@@ -75,12 +109,10 @@ func main() {
 	}
 
 	if FlagIPDetect {
-		ret, err := getIPFromChallenge(Settings.Account.Scheme,
-			Settings.Account.AuthServer,
-			Settings.Account.Username,
-			Settings.Network.CustomIP,
-			Settings.Network.Interface,
-			Settings.Control.StrictMode)
+		client, err := getHttpClient(Settings.Network.StrictMode, Settings.Network.CustomIP, Settings.Network.Interface)
+
+		_, ret, err := getSduUserInfo(Settings.Account.Scheme,
+			Settings.Account.AuthServer, &client)
 		if err != nil {
 			panic(err)
 		}
@@ -90,14 +122,7 @@ func main() {
 
 	if FlagOneshoot {
 		fmt.Println("Log in via web portal...")
-		err := login(Settings.Account.Scheme,
-			Settings.Account.AuthServer,
-			Settings.Account.Username,
-			Settings.Account.Password,
-			Settings.Network.CustomIP,
-			Settings.Network.Interface,
-			Settings.Control.StrictMode,
-			Settings.Network.DetectIP)
+		err := login(&Settings)
 		if err != nil {
 			log.Println("Login failed.", err)
 		}
@@ -123,21 +148,14 @@ func main() {
 
 	//loop
 	for {
-		if !detectNetwork() {
+		if !detectNetwork(&Settings) {
 			log.Println("Network is down. Log in via web portal...")
-			err := login(Settings.Account.Scheme,
-				Settings.Account.AuthServer,
-				Settings.Account.Username,
-				Settings.Account.Password,
-				Settings.Network.CustomIP,
-				Settings.Network.Interface,
-				Settings.Control.StrictMode,
-				Settings.Network.DetectIP)
+			err := login(&Settings)
 			if err != nil {
 				log.Println("Login failed.", err)
 			}
 			time.Sleep(time.Duration(5) * time.Second)
-			if !detectNetwork() {
+			if !detectNetwork(&Settings) {
 				log.Println("Network is still down. Retry after", Settings.Control.Interval, " seconds.")
 			} else {
 				log.Println("Network is up.")

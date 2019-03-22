@@ -8,13 +8,11 @@ THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/robertkrimen/otto"
 	"io/ioutil"
-	"log"
 	"net"
 	"net/http"
 	"time"
@@ -191,26 +189,58 @@ dataChecksum = getDataChecksum(input_username, input_ip,  input_token, dataInfo,
 	return nil
 }
 
-//return true if network is connected
-func detectNetwork() bool {
-	resp, err := http.Get("http://www.msftconnecttest.com/connecttest.txt")
+//
+////return true if network is connected
+//func detectNetwork() bool {
+//	resp, err := http.Get("http://www.msftconnecttest.com/connecttest.txt")
+//	if err != nil {
+//		log.Println("Error: " + err.Error())
+//		return false
+//	}
+//	defer resp.Body.Close()
+//	body, err := ioutil.ReadAll(resp.Body)
+//
+//	if err != nil {
+//		log.Println("Error: " + err.Error())
+//		return false
+//	}
+//
+//	return bytes.Compare(body, []byte("Microsoft Connect Test")) == 0
+//}
+
+func getRawUserInfo(scheme, server string, client *http.Client) (info map[string]interface{}, err error) {
+	req, err := http.NewRequest("GET", scheme+"://"+server+"/cgi-bin/rad_user_info", nil)
 	if err != nil {
-		log.Println("Error: " + err.Error())
-		return false
+		return nil, err
 	}
+	req.Header.Add("Accept", "application/json")
+
+	q := req.URL.Query()
+	q.Add("callback", "")
+	req.URL.RawQuery = q.Encode()
+
+	//fmt.Println(req.URL.String())
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	respBody, _ := ioutil.ReadAll(resp.Body)
 
-	if err != nil {
-		log.Println("Error: " + err.Error())
-		return false
+	if resp.StatusCode != 200 {
+		return nil, errors.New(resp.Status)
 	}
 
-	return bytes.Compare(body, []byte("Microsoft Connect Test")) == 0
+	err = json.Unmarshal(respBody, &info)
+	if err != nil {
+		return nil, err
+	}
+	return info, nil
 }
 
-func getRawChallenge(scheme, server, rawUsername, localIPv4 string, strict bool, doNotSendIP bool) (challenge map[string]interface{}, err error) {
-	client, err := getHttpClient(strict, localIPv4)
+func getRawChallenge(scheme, server, rawUsername, sduIPv4 string, client *http.Client) (challenge map[string]interface{}, err error) {
 	if err != nil {
 		return nil, err
 	}
@@ -223,11 +253,8 @@ func getRawChallenge(scheme, server, rawUsername, localIPv4 string, strict bool,
 
 	q := req.URL.Query()
 	q.Add("username", rawUsername)
-	if doNotSendIP {
-		q.Add("ip", "")
-	} else {
-		q.Add("ip", localIPv4)
-	}
+	q.Add("ip", sduIPv4)
+
 	req.URL.RawQuery = q.Encode()
 
 	fmt.Println(req.URL.String())
@@ -250,65 +277,64 @@ func getRawChallenge(scheme, server, rawUsername, localIPv4 string, strict bool,
 	return challenge, nil
 }
 
-func getChallenge(scheme, server, rawUsername, localIPv4 string, strict bool) (challenge string, err error) {
-	output, err := getRawChallenge(scheme, server, rawUsername, localIPv4, strict, true)
+func getSduUserInfo(scheme, server string, client *http.Client) (logined bool, sduIPv4 string, err error) {
+	output, err := getRawUserInfo(scheme, server, client)
+	if err != nil {
+		return false, "", err
+	}
+	errorStr := output["error"].(string)
+	sduIPv4 = output["online_ip"].(string)
+	//fmt.Println(sduIPv4)
+	return errorStr == "ok", sduIPv4, nil
+}
+func getChallengeID(scheme, server, rawUsername, sduIPv4 string, client *http.Client) (challenge string, err error) {
+	output, err := getRawChallenge(scheme, server, rawUsername, sduIPv4, client)
 	if err != nil {
 		return "", err
 	}
 	challenge = output["challenge"].(string)
-	fmt.Println(challenge)
+	//fmt.Println(challenge)
 	return challenge, nil
 }
 
-func getIPFromChallenge(scheme, server, rawUsername string, localIP string, interfaceWtf string, strict bool) (IP string, err error) {
-	var ip string
-	if interfaceWtf == "" {
-		ip = localIP
-	} else if localIP == "" {
-		ip, err = getIPFromInterface(interfaceWtf)
-		if err != nil {
-			return "", err
-		}
-	} else {
-		ip = ""
-	}
+//func getIPFromChallenge(scheme, server, rawUsername string, localIP string, interfaceWtf string, strict bool) (IP string, err error) {
+//	var ip string
+//	if interfaceWtf == "" {
+//		ip = localIP
+//	} else if localIP == "" {
+//		ip, err = GetIPv4FromInterface(interfaceWtf)
+//		if err != nil {
+//			return "", err
+//		}
+//	} else {
+//		ip = ""
+//	}
+//
+//	output, err := getRawChallenge(scheme, server, rawUsername, ip, strict, true)
+//	if err != nil {
+//		return "", err
+//	}
+//	IP = output["client_ip"].(string)
+//	return IP, nil
+//}
 
-	output, err := getRawChallenge(scheme, server, rawUsername, ip, strict, true)
-	if err != nil {
-		return "", err
-	}
-	IP = output["client_ip"].(string)
-	return IP, nil
-}
-
-func login(scheme, server, rawUsername, rawPassword, localIPv4, interfaceWtf string, strict bool, detectIPFromServer bool) (err error) {
-	var ip string
-	if interfaceWtf == "" {
-		ip = localIPv4
-	} else if localIPv4 == "" {
-		ip, err = getIPFromInterface(interfaceWtf)
-		if err != nil {
-			return err
-		}
-	} else {
-		ip = ""
-	}
-
-	if detectIPFromServer {
-		ip, err = getIPFromChallenge(scheme, server, rawUsername, ip, "", strict)
-		if err != nil {
-			return err
-		}
-	}
-
-	return loginFromIP(scheme, server, rawUsername, rawPassword, ip, strict)
-
-}
-
-func getHttpClient(strict bool, localIPv4 string) (client http.Client, err error) {
+func getHttpClient(strict bool, localIPv4, interfaceWtf string) (client http.Client, err error) {
 	client = http.Client{}
 	if strict {
-		localAddress, err := net.ResolveTCPAddr("tcp", localIPv4)
+		var ipv4 string
+		if interfaceWtf == "" {
+			ipv4 = localIPv4
+		} else if localIPv4 == "" {
+			ipv4, err = GetIPv4FromInterface(interfaceWtf)
+			if err != nil {
+				return client, err
+			}
+		} else {
+			ipv4 = localIPv4
+		}
+
+		//fmt.Println("STRICT MODE: ",ipv4+":0")
+		localAddress, err := net.ResolveTCPAddr("tcp", ipv4+":0")
 		if err != nil {
 			return client, err
 		}
@@ -334,13 +360,8 @@ func getHttpClient(strict bool, localIPv4 string) (client http.Client, err error
 	return client, nil
 }
 
-func loginFromIP(scheme, server, rawUsername, rawPassword, localIPv4 string, strict bool) (err error) {
-	challenge, err := getChallenge(scheme, server, rawUsername, localIPv4, strict)
-	if err != nil {
-		return err
-	}
-
-	client, err := getHttpClient(strict, localIPv4)
+func loginDigest(scheme, server, rawUsername, rawPassword, sduIPv4 string, client *http.Client) (err error) {
+	challenge, err := getChallengeID(scheme, server, rawUsername, sduIPv4, client)
 	if err != nil {
 		return err
 	}
@@ -353,7 +374,7 @@ func loginFromIP(scheme, server, rawUsername, rawPassword, localIPv4 string, str
 
 	var dataInfoStr, dataPasswordMd5Str, dataChecksumStr string
 
-	err = sdunetChallenge(rawUsername, rawPassword, localIPv4, challenge, &dataInfoStr, &dataPasswordMd5Str, &dataChecksumStr)
+	err = sdunetChallenge(rawUsername, rawPassword, sduIPv4, challenge, &dataInfoStr, &dataPasswordMd5Str, &dataChecksumStr)
 	if err != nil {
 		return err
 	}
@@ -363,7 +384,7 @@ func loginFromIP(scheme, server, rawUsername, rawPassword, localIPv4 string, str
 	q.Add("username", rawUsername)
 	q.Add("password", dataPasswordMd5Str)
 	q.Add("ac_id", "1")
-	q.Add("ip", localIPv4)
+	q.Add("ip", sduIPv4)
 	q.Add("info", dataInfoStr)
 	q.Add("chksum", dataChecksumStr)
 	q.Add("n", "200")
@@ -372,6 +393,7 @@ func loginFromIP(scheme, server, rawUsername, rawPassword, localIPv4 string, str
 	req.URL.RawQuery = q.Encode()
 
 	fmt.Println(req.URL.String())
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return err
@@ -387,55 +409,4 @@ func loginFromIP(scheme, server, rawUsername, rawPassword, localIPv4 string, str
 	fmt.Println(string(respBody))
 
 	return nil
-}
-
-//getIPFromInterface gets an IPv4 address from the specific interface
-func getIPFromInterface(interfaceWtf string) (string, error) {
-	ifaces, err := net.InterfaceByName(interfaceWtf)
-	if err != nil {
-		log.Println("Can't get network device "+interfaceWtf+".", err)
-		return "", err
-	}
-
-	addrs, err := ifaces.Addrs()
-	if err != nil {
-		log.Println("Can't get ip address from "+interfaceWtf+".", err)
-		return "", err
-	}
-
-	for _, addr := range addrs {
-		var ip net.IP
-		switch v := addr.(type) {
-		case *net.IPNet:
-			ip = v.IP
-		case *net.IPAddr:
-			ip = v.IP
-		}
-		if ip == nil {
-			continue
-		}
-
-		if !(ip.IsGlobalUnicast() && !(ip.IsUnspecified() || ip.IsMulticast() || ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() || ip.IsInterfaceLocalMulticast())) {
-			continue
-		}
-
-		//the code is not ready for updating an AAAA record
-		/*
-			if (isIPv4(ip.String())){
-				if (configuration.IPType=="IPv6"){
-					continue;
-				}
-			}else{
-				if (configuration.IPType!="IPv6"){
-					continue;
-				}
-			} */
-		if ip.To4() == nil {
-			continue
-		}
-
-		return ip.String(), nil
-
-	}
-	return "", errors.New("can't get a vaild address from " + interfaceWtf)
 }
