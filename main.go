@@ -18,7 +18,6 @@ import (
 func version() {
 	fmt.Println(NAME, VERSION)
 	fmt.Println(DESCRIPTION)
-
 }
 
 func login(settings *Settings) (err error) {
@@ -71,15 +70,19 @@ func main() {
 	flag.BoolVar(&FlagIPDetect, "a", false, "standalone: detect the IP address from the authenticate server. Useful when behind a NAT router.")
 
 	var FlagOneshoot bool
-	flag.BoolVar(&FlagOneshoot, "f", false, "standalone: login to the network, regardless of whether Internet is available.")
+	flag.BoolVar(&FlagOneshoot, "f", false, "standalone: login to the network for once, regardless of whether Internet is available.")
+
+	var FlagTryOneshoot bool
+	flag.BoolVar(&FlagTryOneshoot, "t", false, "standalone: login to the network for once, only if Internet isn't available.")
 
 	flag.Parse()
 
-	version()
 	if FlagShowVersion {
+		version()
 		return
 	}
 	if FlagShowHelp {
+		version()
 		flag.Usage()
 		return
 	}
@@ -90,6 +93,7 @@ func main() {
 	}
 
 	if !fileExist {
+		version()
 		cartman()
 		return
 	}
@@ -108,27 +112,6 @@ func main() {
 		panic(err)
 	}
 
-	if FlagIPDetect {
-		client, err := getHttpClient(Settings.Network.StrictMode, Settings.Network.CustomIP, Settings.Network.Interface)
-
-		_, ret, err := getSduUserInfo(Settings.Account.Scheme,
-			Settings.Account.AuthServer, &client)
-		if err != nil {
-			panic(err)
-		}
-		fmt.Println(ret)
-		return
-	}
-
-	if FlagOneshoot {
-		fmt.Println("Log in via web portal...")
-		err := login(&Settings)
-		if err != nil {
-			log.Println("Login failed.", err)
-		}
-		return
-	}
-
 	//write log to stdout
 	log.SetOutput(os.Stdout)
 
@@ -144,6 +127,44 @@ func main() {
 	}
 	if FlagNoAttribute {
 		log.SetFlags(0)
+	}
+
+	if FlagIPDetect {
+		client, err := getHttpClient(Settings.Network.StrictMode, Settings.Network.CustomIP, Settings.Network.Interface)
+
+		_, ret, err := getSduUserInfo(Settings.Account.Scheme,
+			Settings.Account.AuthServer, &client)
+		if err != nil {
+			log.Panicln(err)
+		}
+		fmt.Println(ret)
+		return
+	}
+
+	if FlagOneshoot {
+		version()
+		log.Println("Log in via web portal...")
+		err := login(&Settings)
+		if err != nil {
+			log.Println("Login failed.", err)
+			os.Exit(1)
+		}
+		return
+	}
+
+	if FlagTryOneshoot {
+		version()
+		if !detectNetwork(&Settings) {
+			log.Println("Network is down. Log in via web portal...")
+			err := login(&Settings)
+			if err != nil {
+				log.Println("Login failed.", err)
+				os.Exit(1)
+			}
+		} else {
+			log.Println("Network is up. Nothing to do.")
+		}
+		return
 	}
 
 	//loop
