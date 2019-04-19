@@ -10,7 +10,6 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/robertkrimen/otto"
 	"io/ioutil"
 	"net"
@@ -162,7 +161,7 @@ dataChecksum = getDataChecksum(input_username, input_ip,  input_token, dataInfo,
 	if err != nil {
 		return err
 	}
-	fmt.Println(*dataInfoStr)
+	//fmt.Println(*dataInfoStr)
 
 	dataPasswordMd5, err := vm.Get("dataPasswordMd5")
 	if err != nil {
@@ -173,7 +172,7 @@ dataChecksum = getDataChecksum(input_username, input_ip,  input_token, dataInfo,
 	if err != nil {
 		return err
 	}
-	fmt.Println(*dataPasswordMd5Str)
+	//fmt.Println(*dataPasswordMd5Str)
 
 	dataChecksum, err := vm.Get("dataChecksum")
 	if err != nil {
@@ -184,7 +183,7 @@ dataChecksum = getDataChecksum(input_username, input_ip,  input_token, dataInfo,
 	if err != nil {
 		return err
 	}
-	fmt.Println(*dataChecksumStr)
+	//fmt.Println(*dataChecksumStr)
 
 	return nil
 }
@@ -257,7 +256,7 @@ func getRawChallenge(scheme, server, rawUsername, sduIPv4 string, client *http.C
 
 	req.URL.RawQuery = q.Encode()
 
-	fmt.Println(req.URL.String())
+	//fmt.Println(req.URL.String())
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -392,7 +391,7 @@ func loginDigest(scheme, server, rawUsername, rawPassword, sduIPv4 string, clien
 
 	req.URL.RawQuery = q.Encode()
 
-	fmt.Println(req.URL.String())
+	//fmt.Println(req.URL.String())
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -406,7 +405,16 @@ func loginDigest(scheme, server, rawUsername, rawPassword, sduIPv4 string, clien
 		return errors.New(resp.Status)
 	}
 
-	fmt.Println(string(respBody))
+	var output map[string]interface{}
+	err = json.Unmarshal(respBody, &output)
+	if err != nil {
+		return err
+	}
 
-	return nil
+	errorStr := output["error"].(string)
+	if errorStr == "ok" {
+		return nil
+	} else {
+		return errors.New(errorStr)
+	}
 }
