@@ -58,7 +58,7 @@ WantedBy=multi-user.target
 
   - Note: You MUST choose proper builds according to `/proc/cpuinfo`.
 
-  - Note: It might take a few minutes to copy a large file if `squashfs` is enabled on the router.
+  - Note: It might take a few minutes to copy a large file to the router.
 
 
 2. `chmod +x /usr/local/bin/sdunetd`
