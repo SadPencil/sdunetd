@@ -8,6 +8,7 @@ THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"github.com/robertkrimen/otto"
@@ -215,7 +216,7 @@ func getRawUserInfo(scheme, server string, client *http.Client) (info map[string
 	req.Header.Add("Accept", "application/json")
 
 	q := req.URL.Query()
-	q.Add("callback", "")
+	q.Add("callback", "jQuery")
 	req.URL.RawQuery = q.Encode()
 
 	//fmt.Println(req.URL.String())
@@ -227,6 +228,11 @@ func getRawUserInfo(scheme, server string, client *http.Client) (info map[string
 
 	defer resp.Body.Close()
 	respBody, _ := ioutil.ReadAll(resp.Body)
+
+	if bytes.Equal(respBody[0:7], []byte("jQuery(")) {
+		respBody = respBody[7:]
+		respBody = respBody[:len(respBody)-1]
+	}
 
 	if resp.StatusCode != 200 {
 		return nil, errors.New(resp.Status)
