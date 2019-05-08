@@ -12,10 +12,9 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/robertkrimen/otto"
-	"io/ioutil"
-	"net"
+	"log"
 	"net/http"
-	"time"
+	"os/exec"
 )
 
 func sdunetChallenge(username, password, localIP, token string, dataInfoStr, dataPasswordMd5Str, dataChecksumStr *string) (err error) {
@@ -208,7 +207,7 @@ dataChecksum = getDataChecksum(input_username, input_ip,  input_token, dataInfo,
 //	return bytes.Compare(body, []byte("Microsoft Connect Test")) == 0
 //}
 
-func getRawUserInfo(scheme, server string, client *http.Client) (info map[string]interface{}, err error) {
+func getRawUserInfoCurl(scheme, server string, interfaceWtf string) (info map[string]interface{}, err error) {
 	req, err := http.NewRequest("GET", scheme+"://"+server+"/cgi-bin/rad_user_info", nil)
 	if err != nil {
 		return nil, err
@@ -220,23 +219,38 @@ func getRawUserInfo(scheme, server string, client *http.Client) (info map[string
 	req.URL.RawQuery = q.Encode()
 
 	//fmt.Println(req.URL.String())
-
-	resp, err := client.Do(req)
+	var cmd *exec.Cmd
+	if len(interfaceWtf) == 0 {
+		cmd = exec.Command("curl", "-H", "Accept:application/json", req.URL.String())
+	} else {
+		cmd = exec.Command("curl", "--interface", interfaceWtf, "-H", "Accept:application/json", req.URL.String())
+	}
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+	err = cmd.Run()
 	if err != nil {
+		log.Println("[ERROR]", err, "\n", stderr)
 		return nil, err
 	}
+	respBody := out.Bytes()
 
-	defer resp.Body.Close()
-	respBody, _ := ioutil.ReadAll(resp.Body)
+	//resp, err := client.Do(req)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	//defer resp.Body.Close()
+	//respBody, _ := ioutil.ReadAll(resp.Body)
 
 	if bytes.Equal(respBody[0:7], []byte("jQuery(")) {
 		respBody = respBody[7:]
 		respBody = respBody[:len(respBody)-1]
 	}
-
-	if resp.StatusCode != 200 {
-		return nil, errors.New(resp.Status)
-	}
+	//if resp.StatusCode != 200 {
+	//	return nil, errors.New(resp.Status)
+	//}
 
 	err = json.Unmarshal(respBody, &info)
 	if err != nil {
@@ -245,7 +259,7 @@ func getRawUserInfo(scheme, server string, client *http.Client) (info map[string
 	return info, nil
 }
 
-func getRawChallenge(scheme, server, rawUsername, sduIPv4 string, client *http.Client) (challenge map[string]interface{}, err error) {
+func getRawChallengeCurl(scheme, server, rawUsername, sduIPv4 string, interfaceWtf string) (challenge map[string]interface{}, err error) {
 	if err != nil {
 		return nil, err
 	}
@@ -262,18 +276,35 @@ func getRawChallenge(scheme, server, rawUsername, sduIPv4 string, client *http.C
 
 	req.URL.RawQuery = q.Encode()
 
-	//fmt.Println(req.URL.String())
-	resp, err := client.Do(req)
+	var cmd *exec.Cmd
+	if len(interfaceWtf) == 0 {
+		cmd = exec.Command("curl", "-H", "Accept:application/json", req.URL.String())
+	} else {
+		cmd = exec.Command("curl", "--interface", interfaceWtf, "-H", "Accept:application/json", req.URL.String())
+	}
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+	err = cmd.Run()
 	if err != nil {
+		log.Println("[ERROR]", err, "\n", stderr)
 		return nil, err
 	}
+	respBody := out.Bytes()
 
-	defer resp.Body.Close()
-	respBody, _ := ioutil.ReadAll(resp.Body)
-
-	if resp.StatusCode != 200 {
-		return nil, errors.New(resp.Status)
-	}
+	////fmt.Println(req.URL.String())
+	//resp, err := client.Do(req)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	//defer resp.Body.Close()
+	//respBody, _ := ioutil.ReadAll(resp.Body)
+	//
+	//if resp.StatusCode != 200 {
+	//	return nil, errors.New(resp.Status)
+	//}
 
 	err = json.Unmarshal(respBody, &challenge)
 	if err != nil {
@@ -282,8 +313,8 @@ func getRawChallenge(scheme, server, rawUsername, sduIPv4 string, client *http.C
 	return challenge, nil
 }
 
-func getSduUserInfo(scheme, server string, client *http.Client) (logined bool, sduIPv4 string, err error) {
-	output, err := getRawUserInfo(scheme, server, client)
+func getSduUserInfoCurl(scheme, server string, interfaceWtf string) (logined bool, sduIPv4 string, err error) {
+	output, err := getRawUserInfoCurl(scheme, server, interfaceWtf)
 	if err != nil {
 		return false, "", err
 	}
@@ -292,8 +323,9 @@ func getSduUserInfo(scheme, server string, client *http.Client) (logined bool, s
 	//fmt.Println(sduIPv4)
 	return errorStr == "ok", sduIPv4, nil
 }
-func getChallengeID(scheme, server, rawUsername, sduIPv4 string, client *http.Client) (challenge string, err error) {
-	output, err := getRawChallenge(scheme, server, rawUsername, sduIPv4, client)
+
+func getChallengeIDCurl(scheme, server, rawUsername, sduIPv4 string, interfaceWtf string) (challenge string, err error) {
+	output, err := getRawChallengeCurl(scheme, server, rawUsername, sduIPv4, interfaceWtf)
 	if err != nil {
 		return "", err
 	}
@@ -322,51 +354,51 @@ func getChallengeID(scheme, server, rawUsername, sduIPv4 string, client *http.Cl
 //	IP = output["client_ip"].(string)
 //	return IP, nil
 //}
+//
+//func getHttpClient(strict bool, localIPv4, interfaceWtf string) (client http.Client, err error) {
+//	client = http.Client{}
+//	if strict {
+//		var ipv4 string
+//		if interfaceWtf == "" {
+//			ipv4 = localIPv4
+//		} else if localIPv4 == "" {
+//			ipv4, err = GetIPv4FromInterface(interfaceWtf)
+//			if err != nil {
+//				return client, err
+//			}
+//		} else {
+//			ipv4 = localIPv4
+//		}
+//
+//		//fmt.Println("STRICT MODE: ",ipv4+":0")
+//		localAddress, err := net.ResolveTCPAddr("tcp", ipv4+":0")
+//		if err != nil {
+//			return client, err
+//		}
+//
+//		//https://stackoverflow.com/questions/30552447/how-to-set-which-ip-to-use-for-a-http-request
+//		// Create a transport like http.DefaultTransport, but with a specified localAddr
+//
+//		client.Transport = &http.Transport{
+//			Proxy: http.ProxyFromEnvironment,
+//			DialContext: (&net.Dialer{
+//				Timeout:   30 * time.Second,
+//				KeepAlive: 30 * time.Second,
+//				LocalAddr: localAddress,
+//				DualStack: true,
+//			}).DialContext,
+//			MaxIdleConns:          100,
+//			IdleConnTimeout:       90 * time.Second,
+//			TLSHandshakeTimeout:   10 * time.Second,
+//			ExpectContinueTimeout: 1 * time.Second,
+//		}
+//
+//	}
+//	return client, nil
+//}
 
-func getHttpClient(strict bool, localIPv4, interfaceWtf string) (client http.Client, err error) {
-	client = http.Client{}
-	if strict {
-		var ipv4 string
-		if interfaceWtf == "" {
-			ipv4 = localIPv4
-		} else if localIPv4 == "" {
-			ipv4, err = GetIPv4FromInterface(interfaceWtf)
-			if err != nil {
-				return client, err
-			}
-		} else {
-			ipv4 = localIPv4
-		}
-
-		//fmt.Println("STRICT MODE: ",ipv4+":0")
-		localAddress, err := net.ResolveTCPAddr("tcp", ipv4+":0")
-		if err != nil {
-			return client, err
-		}
-
-		//https://stackoverflow.com/questions/30552447/how-to-set-which-ip-to-use-for-a-http-request
-		// Create a transport like http.DefaultTransport, but with a specified localAddr
-
-		client.Transport = &http.Transport{
-			Proxy: http.ProxyFromEnvironment,
-			DialContext: (&net.Dialer{
-				Timeout:   30 * time.Second,
-				KeepAlive: 30 * time.Second,
-				LocalAddr: localAddress,
-				DualStack: true,
-			}).DialContext,
-			MaxIdleConns:          100,
-			IdleConnTimeout:       90 * time.Second,
-			TLSHandshakeTimeout:   10 * time.Second,
-			ExpectContinueTimeout: 1 * time.Second,
-		}
-
-	}
-	return client, nil
-}
-
-func loginDigest(scheme, server, rawUsername, rawPassword, sduIPv4 string, client *http.Client) (err error) {
-	challenge, err := getChallengeID(scheme, server, rawUsername, sduIPv4, client)
+func loginDigestCurl(scheme, server, rawUsername, rawPassword, sduIPv4 string, interfaceWtf string) (err error) {
+	challenge, err := getChallengeIDCurl(scheme, server, rawUsername, sduIPv4, interfaceWtf)
 	if err != nil {
 		return err
 	}
@@ -397,19 +429,36 @@ func loginDigest(scheme, server, rawUsername, rawPassword, sduIPv4 string, clien
 
 	req.URL.RawQuery = q.Encode()
 
-	//fmt.Println(req.URL.String())
+	var cmd *exec.Cmd
+	if len(interfaceWtf) == 0 {
+		cmd = exec.Command("curl", "-H", "Accept:application/json", req.URL.String())
+	} else {
+		cmd = exec.Command("curl", "--interface", interfaceWtf, "-H", "Accept:application/json", req.URL.String())
+	}
 
-	resp, err := client.Do(req)
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+	err = cmd.Run()
 	if err != nil {
+		log.Println("[ERROR]", err, "\n", stderr)
 		return err
 	}
+	//fmt.Println(req.URL.String())
 
-	defer resp.Body.Close()
-	respBody, _ := ioutil.ReadAll(resp.Body)
-
-	if resp.StatusCode != 200 {
-		return errors.New(resp.Status)
-	}
+	//resp, err := client.Do(req)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//defer resp.Body.Close()
+	//respBody, _ := ioutil.ReadAll(resp.Body)
+	//
+	//if resp.StatusCode != 200 {
+	//	return errors.New(resp.Status)
+	//}
+	respBody := out.Bytes()
 
 	var output map[string]interface{}
 	err = json.Unmarshal(respBody, &output)

@@ -22,29 +22,37 @@ func version() {
 
 func login(settings *Settings) (err error) {
 
-	client, err := getHttpClient(settings.Network.StrictMode, settings.Network.CustomIP, settings.Network.Interface)
-	if err != nil {
-		return err
-	}
+	//client, err := getHttpClient(settings.Network.StrictMode, settings.Network.CustomIP, settings.Network.Interface)
+	//if err != nil {
+	//	return err
+	//}
 
 	//if detectIPFromServer {
-	_, sduIPv4, err := getSduUserInfo(settings.Account.Scheme, settings.Account.AuthServer, &client)
+	var interfaceWtf string
+	if settings.Network.StrictMode {
+		interfaceWtf = settings.Network.Interface
+	}
+	_, sduIPv4, err := getSduUserInfoCurl(settings.Account.Scheme, settings.Account.AuthServer, interfaceWtf)
 	if err != nil {
 		return err
 	}
 	//}
 
-	return loginDigest(settings.Account.Scheme, settings.Account.AuthServer, settings.Account.Username, settings.Account.Password, sduIPv4, &client)
+	return loginDigestCurl(settings.Account.Scheme, settings.Account.AuthServer, settings.Account.Username, settings.Account.Password, sduIPv4, interfaceWtf)
 
 }
 
 func detectNetwork(settings *Settings) bool {
-	client, err := getHttpClient(settings.Network.StrictMode, settings.Network.CustomIP, settings.Network.Interface)
-	if err != nil {
-		log.Println("[ERROR]", err)
-		return false
+	//client, err := getHttpClient(settings.Network.StrictMode, settings.Network.CustomIP, settings.Network.Interface)
+	//if err != nil {
+	//	log.Println("[ERROR]", err)
+	//	return false
+	//}
+	var interfaceWtf string
+	if settings.Network.StrictMode {
+		interfaceWtf = settings.Network.Interface
 	}
-	ret, ipv4, err := getSduUserInfo(settings.Account.Scheme, settings.Account.AuthServer, &client)
+	ret, ipv4, err := getSduUserInfoCurl(settings.Account.Scheme, settings.Account.AuthServer, interfaceWtf)
 	if err != nil {
 		log.Println("[ERROR]", err)
 		return false
@@ -130,10 +138,13 @@ func main() {
 	}
 
 	if FlagIPDetect {
-		client, err := getHttpClient(Settings.Network.StrictMode, Settings.Network.CustomIP, Settings.Network.Interface)
-
-		_, ret, err := getSduUserInfo(Settings.Account.Scheme,
-			Settings.Account.AuthServer, &client)
+		//client, err := getHttpClient(Settings.Network.StrictMode, Settings.Network.CustomIP, Settings.Network.Interface)
+		var interfaceWtf string
+		if Settings.Network.StrictMode {
+			interfaceWtf = Settings.Network.Interface
+		}
+		_, ret, err := getSduUserInfoCurl(Settings.Account.Scheme,
+			Settings.Account.AuthServer, interfaceWtf)
 		if err != nil {
 			log.Panicln(err)
 		}
