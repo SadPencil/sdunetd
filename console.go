@@ -96,7 +96,7 @@ func cartman() {
 		var ips []string
 		var interfaceStrings []string
 		{
-			_, ip, err := getSduUserInfoCurl(Settings.Account.Scheme,
+			_, ip, err := getSduUserInfo(Settings.Account.Scheme,
 				Settings.Account.AuthServer, "")
 
 			//ip, err := getIPFromChallenge(Settings.Account.Scheme,

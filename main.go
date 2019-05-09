@@ -32,13 +32,13 @@ func login(settings *Settings) (err error) {
 	if settings.Network.StrictMode {
 		interfaceWtf = settings.Network.Interface
 	}
-	_, sduIPv4, err := getSduUserInfoCurl(settings.Account.Scheme, settings.Account.AuthServer, interfaceWtf)
+	_, sduIPv4, err := getSduUserInfo(settings.Account.Scheme, settings.Account.AuthServer, interfaceWtf)
 	if err != nil {
 		return err
 	}
 	//}
 
-	return loginDigestCurl(settings.Account.Scheme, settings.Account.AuthServer, settings.Account.Username, settings.Account.Password, sduIPv4, interfaceWtf)
+	return loginDigest(settings.Account.Scheme, settings.Account.AuthServer, settings.Account.Username, settings.Account.Password, sduIPv4, interfaceWtf)
 
 }
 
@@ -52,7 +52,7 @@ func detectNetwork(settings *Settings) bool {
 	if settings.Network.StrictMode {
 		interfaceWtf = settings.Network.Interface
 	}
-	ret, ipv4, err := getSduUserInfoCurl(settings.Account.Scheme, settings.Account.AuthServer, interfaceWtf)
+	ret, ipv4, err := getSduUserInfo(settings.Account.Scheme, settings.Account.AuthServer, interfaceWtf)
 	if err != nil {
 		log.Println("[ERROR]", err)
 		return false
@@ -143,7 +143,7 @@ func main() {
 		if Settings.Network.StrictMode {
 			interfaceWtf = Settings.Network.Interface
 		}
-		_, ret, err := getSduUserInfoCurl(Settings.Account.Scheme,
+		_, ret, err := getSduUserInfo(Settings.Account.Scheme,
 			Settings.Account.AuthServer, interfaceWtf)
 		if err != nil {
 			log.Panicln(err)
@@ -179,6 +179,7 @@ func main() {
 	}
 
 	//loop
+	version()
 	for {
 		if !detectNetwork(&Settings) {
 			log.Println("Network is down. Log in via web portal...")
