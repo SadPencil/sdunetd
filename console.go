@@ -14,7 +14,6 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 	"log"
 	"net"
-	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -98,7 +97,7 @@ func cartman() {
 		var interfaceStrings []string
 		{
 			_, ip, err := getSduUserInfo(Settings.Account.Scheme,
-				Settings.Account.AuthServer, &http.Client{})
+				Settings.Account.AuthServer, "")
 
 			//ip, err := getIPFromChallenge(Settings.Account.Scheme,
 			//	Settings.Account.AuthServer,

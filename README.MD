@@ -3,7 +3,7 @@ Embedded SRUN3000 Portal Client for SDU-Qingdao
 _________
 Ver 1.1 is once suitable for Shandong University, Qingdao Campus, up to 2018. No longer supported.
 
-Ver 2.0 is suitable for Shandong University, Qingdao Campus, since March 2019.
+Ver 2.0+ is suitable for Shandong University, Qingdao Campus, since March 2019.
 
 ## Copyright
 Copyright © 2018-2019 Sad Pencil &lt;me@pencil.live&gt;
@@ -114,7 +114,7 @@ However, you can't use GoDNS behind a NAT router because the Internet traffic at
 
 `sdunetd` is able to detect your real IPv4 address at SDU-Qingdao no matter you are under a router or not. So, if you do need this feature, open an issue at [sdunetd](https://github.com/SadPencil/sdunetd/issues) so that we can fork a special version of GoDNS which is suitable for SDU-Qingdao.
 
-## How to Compile
+## How to compile sdunetd
 
 ```bash
 git clone https://github.com/SadPencil/sdunetd
@@ -136,3 +136,12 @@ CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags=all="-s -w" -o build/sd
 CGO_ENABLED=0 GOOS=freebsd GOARCH=amd64 go build -ldflags=all="-s -w" -o build/sdunetd-freebsd-amd64
 upx --best --ultra-brute build/*
 ```
+
+## the cURL version of sdunetd
+For unknown reasons, the Linux version's “strict mode" might not work properly when multiple default route through different network interfaces are set, while curl works well in this situation. Thus, we provided an additional cURL version.
+
+Note, this version is not build for Windows.
+### How to compile the cURL version
+Add `-tags="curl"` to the end of `go build`. 
+
+Example: `CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags=all="-s -w" -o build/sdunetd-curl-linux-amd64 -tags="curl"`
