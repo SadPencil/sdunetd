@@ -94,12 +94,13 @@ Example:
 1. Create a service named `sdunetd`
 
 ```winbatch
-sc create "sdunetd" start= auto binPath= "C:\Program Files\sdunetd\sdunetd.exe"
+sc create "sdunetd" start= auto binPath= "C:\Program Files\sdunetd\srvany.exe"
 ```
 
 2. Import the following to the registry
 
 ```ini
+Windows Registry Editor Version 5.00
 [HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\sdunetd\Parameters]
 "Application"="C:\\Program Files\\sdunetd\\sdunetd.exe"
 "AppDirectory"="C:\\Program Files\\sdunetd"
