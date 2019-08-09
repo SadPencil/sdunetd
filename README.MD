@@ -102,7 +102,7 @@ sc create "sdunetd" start= auto binPath= "C:\Program Files\sdunetd\srvany.exe"
 ```ini
 Windows Registry Editor Version 5.00
 [HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\sdunetd\Parameters]
-"Application"="C:\\Program Files\\sdunetd\\sdunetd.exe"
+"Application"="C:\\Program Files\\sdunetd\\srvany.exe"
 "AppDirectory"="C:\\Program Files\\sdunetd"
 "AppParameters"="-c \"C:\\Program Files\\sdunetd\\config.json\""
 ```
