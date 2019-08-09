@@ -1,5 +1,14 @@
 # Update log of sdunetd
 
+## [v2.2.2](https://github.com/SadPencil/sdunetd/releases/tag/v2.2.2)
+
+The 2.2.2 version. Suitable for Shandong University, Qingdao Campus, since March 2019.
+
+Update log:
+
+- add `-l` flag to logout
+- add some tips on the guide
+
 ## [v2.2](https://github.com/SadPencil/sdunetd/releases/tag/v2.2)
 
 The 2.2 version. Suitable for Shandong University, Qingdao Campus, since March 2019.
