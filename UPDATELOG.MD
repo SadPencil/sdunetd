@@ -1,5 +1,13 @@
 # Update log of sdunetd
 
+## [v2.2](https://github.com/SadPencil/sdunetd/releases/tag/v2.2)
+
+The 2.2 version. Suitable for Shandong University, Qingdao Campus, since March 2019.
+
+Update log:
+
+- add jsonp callback for disgusting
+
 ## [v2.1](https://github.com/SadPencil/sdunetd/releases/tag/v2.1)
 
 The 2.1 version. Suitable for Shandong University, Qingdao Campus, since March 2019.
