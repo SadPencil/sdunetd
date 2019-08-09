@@ -20,26 +20,29 @@ func version() {
 	fmt.Println(DESCRIPTION)
 }
 
-func login(settings *Settings) (err error) {
-
-	//client, err := getHttpClient(settings.Network.StrictMode, settings.Network.CustomIP, settings.Network.Interface)
-	//if err != nil {
-	//	return err
-	//}
-
-	//if detectIPFromServer {
-	var interfaceWtf string
+func _getNetworkInterface(settings *Settings) (interfaceWtf string) {
 	if settings.Network.StrictMode {
 		interfaceWtf = settings.Network.Interface
 	}
+	return interfaceWtf
+}
+
+func _login(settings *Settings) (err error) {
+
+	interfaceWtf := _getNetworkInterface(settings)
+
 	_, sduIPv4, err := getSduUserInfo(settings.Account.Scheme, settings.Account.AuthServer, interfaceWtf)
 	if err != nil {
 		return err
 	}
-	//}
 
 	return loginDigest(settings.Account.Scheme, settings.Account.AuthServer, settings.Account.Username, settings.Account.Password, sduIPv4, interfaceWtf)
 
+}
+
+func _logout(settings *Settings) (err error) {
+	interfaceWtf := _getNetworkInterface(settings)
+	return logout(settings.Account.Scheme, settings.Account.AuthServer, settings.Account.Username, interfaceWtf)
 }
 
 func detectNetwork(settings *Settings) bool {
@@ -48,10 +51,7 @@ func detectNetwork(settings *Settings) bool {
 	//	log.Println("[ERROR]", err)
 	//	return false
 	//}
-	var interfaceWtf string
-	if settings.Network.StrictMode {
-		interfaceWtf = settings.Network.Interface
-	}
+	interfaceWtf := _getNetworkInterface(settings)
 	ret, ipv4, err := getSduUserInfo(settings.Account.Scheme, settings.Account.AuthServer, interfaceWtf)
 	if err != nil {
 		log.Println("[ERROR]", err)
@@ -65,8 +65,9 @@ func detectNetwork(settings *Settings) bool {
 func main() {
 	var FlagShowHelp bool
 	flag.BoolVar(&FlagShowHelp, "h", false, "standalone: show the help.")
+
 	var FlagShowVersion bool
-	flag.BoolVar(&FlagShowVersion, "v", false, "standalone: show the version")
+	flag.BoolVar(&FlagShowVersion, "v", false, "standalone: show the version.")
 
 	var FlagConfigFile string
 	flag.StringVar(&FlagConfigFile, "c", "", "the config.json file. Leave it blank to use the interact mode.")
@@ -82,6 +83,9 @@ func main() {
 
 	var FlagTryOneshoot bool
 	flag.BoolVar(&FlagTryOneshoot, "t", false, "standalone: login to the network for once, only if Internet isn't available.")
+
+	var FlagLogout bool
+	flag.BoolVar(&FlagLogout, "l", false, "standalone: logout from the network for once.")
 
 	flag.Parse()
 
@@ -139,10 +143,7 @@ func main() {
 
 	if FlagIPDetect {
 		//client, err := getHttpClient(Settings.Network.StrictMode, Settings.Network.CustomIP, Settings.Network.Interface)
-		var interfaceWtf string
-		if Settings.Network.StrictMode {
-			interfaceWtf = Settings.Network.Interface
-		}
+		interfaceWtf := _getNetworkInterface(&Settings)
 		_, ret, err := getSduUserInfo(Settings.Account.Scheme,
 			Settings.Account.AuthServer, interfaceWtf)
 		if err != nil {
@@ -155,10 +156,12 @@ func main() {
 	if FlagOneshoot {
 		version()
 		log.Println("Log in via web portal...")
-		err := login(&Settings)
+		err := _login(&Settings)
 		if err != nil {
 			log.Println("Login failed.", err)
 			os.Exit(1)
+		} else {
+			log.Println("Succeed.")
 		}
 		return
 	}
@@ -167,13 +170,28 @@ func main() {
 		version()
 		if !detectNetwork(&Settings) {
 			log.Println("Network is down. Log in via web portal...")
-			err := login(&Settings)
+			err := _login(&Settings)
 			if err != nil {
 				log.Println("Login failed.", err)
 				os.Exit(1)
+			} else {
+				log.Println("Succeed.")
 			}
 		} else {
 			log.Println("Network is up. Nothing to do.")
+		}
+		return
+	}
+
+	if FlagLogout {
+		version()
+		log.Println("Logout via web portal...")
+		err := _logout(&Settings)
+		if err != nil {
+			log.Println("Logout failed.", err)
+			os.Exit(1)
+		} else {
+			log.Println("Succeed.")
 		}
 		return
 	}
@@ -183,7 +201,7 @@ func main() {
 	for {
 		if !detectNetwork(&Settings) {
 			log.Println("Network is down. Log in via web portal...")
-			err := login(&Settings)
+			err := _login(&Settings)
 			if err != nil {
 				log.Println("Login failed.", err)
 			}

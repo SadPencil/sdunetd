@@ -31,6 +31,21 @@ func cartman() {
 	var err error
 
 	for {
+		fmt.Println("Question 0. Are you ready? [Yes]")
+		ans, err := reader.ReadString('\n')
+		if err != nil {
+			panic(err)
+		}
+		ans = strings.TrimSpace(ans)
+		if ans == "" {
+			fmt.Println("Cool. Let's start.")
+			break
+		} else {
+			fmt.Println("Ah, god dammit. I told you that you can just LEAVE IT BLANK if you want the default answer. Now try again.")
+		}
+	}
+
+	for {
 		fmt.Println("Question 1. What's your username? []")
 
 		Settings.Account.Username, err = reader.ReadString('\n')
@@ -137,6 +152,7 @@ func cartman() {
 		}
 
 		fmt.Println("Network interfaces are listed above. Which one is connected to the Portal network? [0]")
+		fmt.Println("Hint: It is recommended to choose auto detect as long as the reported IP address is correct, even if you have only one network interface available. Choosing a specific network interface instead of auto detect causes different behavior and it's not recommended unless you have multiple default routes via multiple network interfaces.")
 		choice, err := reader.ReadString('\n')
 		if err != nil {
 			panic(err)
@@ -249,7 +265,7 @@ func cartman() {
 		}
 		if yesOrNo {
 			fmt.Println("Log in via web portal...")
-			err := login(&Settings)
+			err := _login(&Settings)
 			if err != nil {
 				log.Println("Login failed.", err)
 			}

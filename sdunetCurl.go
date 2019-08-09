@@ -199,3 +199,57 @@ func loginDigest(scheme, server, rawUsername, rawPassword, sduIPv4 string, inter
 		return errors.New(errorStr)
 	}
 }
+
+func logout(scheme, server, rawUsername string, client *http.Client) (err error) {
+	req, err := http.NewRequest("GET", scheme+"://"+server+"/cgi-bin/srun_portal", nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Add("Accept", "application/json")
+
+	q := req.URL.Query()
+	q.Add("callback", "jQuery")
+	q.Add("ac_id", "1")
+	q.Add("action", "logout")
+	q.Add("username", rawUsername)
+	req.URL.RawQuery = q.Encode()
+
+	//fmt.Println(req.URL.String())
+
+	var respBody []byte
+
+	if len(interfaceWtf) == 0 {
+		respBody, err = commandCurl("-H", "Accept:application/json", req.URL.String())
+	} else {
+		respBody, err = commandCurl("--interface", "if!"+interfaceWtf, "-H", "Accept:application/json", req.URL.String())
+	}
+
+	if err != nil {
+		return err
+	}
+
+	defer resp.Body.Close()
+	respBody, _ := ioutil.ReadAll(resp.Body)
+
+	if bytes.Equal(respBody[0:7], []byte("jQuery(")) {
+		respBody = respBody[7:]
+		respBody = respBody[:len(respBody)-1]
+	}
+
+	if resp.StatusCode != 200 {
+		return errors.New(resp.Status)
+	}
+
+	var output map[string]interface{}
+	err = json.Unmarshal(respBody, &output)
+	if err != nil {
+		return err
+	}
+
+	errorStr := output["error"].(string)
+	if errorStr == "ok" {
+		return nil
+	} else {
+		return errors.New(errorStr)
+	}
+}
