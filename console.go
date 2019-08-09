@@ -31,6 +31,7 @@ func cartman() {
 	var err error
 
 	for {
+		fmt.Println()
 		fmt.Println("Question 0. Are you ready? [Yes]")
 		ans, err := reader.ReadString('\n')
 		if err != nil {
@@ -38,7 +39,7 @@ func cartman() {
 		}
 		ans = strings.TrimSpace(ans)
 		if ans == "" {
-			fmt.Println("Cool. Let's start.")
+			fmt.Println("Cool. Let's get started.")
 			break
 		} else {
 			fmt.Println("Ah, god dammit. I told you that you can just LEAVE IT BLANK if you want the default answer. Now try again.")
@@ -46,6 +47,7 @@ func cartman() {
 	}
 
 	for {
+		fmt.Println()
 		fmt.Println("Question 1. What's your username? []")
 
 		Settings.Account.Username, err = reader.ReadString('\n')
@@ -60,6 +62,7 @@ func cartman() {
 		}
 	}
 	for {
+		fmt.Println()
 		fmt.Println("Question 2. What's your password? []")
 		bytePassword, err := terminal.ReadPassword(int(syscall.Stdin))
 		fmt.Println() // it's necessary to add a new line after user's input
@@ -77,9 +80,11 @@ func cartman() {
 		}
 	}
 
+	var probablyIPv6 bool = false
 	for {
-		fmt.Println("Question 3. What's the authenticate server's ip address? [" + DEFAULT_AUTH_SERVER + "]")
-		fmt.Println("Hint: You can also write down the server's FQDN if necessary.")
+		fmt.Println()
+		fmt.Println("Question 3. What's the authentication server's ip address? [" + DEFAULT_AUTH_SERVER + "]")
+		fmt.Println("Hint: You can also write down the server's FQDN if necessary. You may specify either an IPv4 or IPv6 server.")
 		Settings.Account.AuthServer, err = reader.ReadString('\n')
 		if err != nil {
 			panic(err)
@@ -88,11 +93,19 @@ func cartman() {
 		if err != nil {
 			fmt.Println(err)
 		} else {
+			if strings.Count(Settings.Account.AuthServer, ":") >= 2 {
+				probablyIPv6 = true
+				fmt.Println("Hint: Add a pair of [] with the IPv6 address. Omit this hint if you have already done so.")
+				fmt.Println("Example 1 \t [2001:250:5800:11::1]")
+				fmt.Println("Example 2 \t [2001:250:5800:11::1]:8080")
+			}
+
 			break
 		}
 	}
 	for {
-		fmt.Println("Question 4. Does the authenticate server use HTTP protocol, or HTTPS? [" + DEFAULT_AUTH_SCHEME + "]")
+		fmt.Println()
+		fmt.Println("Question 4. Does the authentication server use HTTP protocol, or HTTPS? [" + DEFAULT_AUTH_SCHEME + "]")
 		Settings.Account.Scheme, err = reader.ReadString('\n')
 		if err != nil {
 			panic(err)
@@ -106,7 +119,7 @@ func cartman() {
 	}
 
 	for {
-
+		fmt.Println()
 		fmt.Println("Question 5.")
 		var ips []string
 		var interfaceStrings []string
@@ -124,6 +137,8 @@ func cartman() {
 				fmt.Println(err)
 				ips = append(ips, "")
 				//忽略错误继续
+				fmt.Println("Warning: Failed to connected to the authentication server.")
+				fmt.Println()
 			} else {
 				ips = append(ips, ip)
 				interfaceStrings = append(interfaceStrings, "")
@@ -153,6 +168,9 @@ func cartman() {
 
 		fmt.Println("Network interfaces are listed above. Which one is connected to the Portal network? [0]")
 		fmt.Println("Hint: It is recommended to choose auto detect as long as the reported IP address is correct, even if you have only one network interface available. Choosing a specific network interface instead of auto detect causes different behavior and it's not recommended unless you have multiple default routes via multiple network interfaces.")
+		if probablyIPv6 {
+			fmt.Println("Hint: You might have specified an IPv6 authentication server. Choose auto detect, as all but auto detect will not work.")
+		}
 		choice, err := reader.ReadString('\n')
 		if err != nil {
 			panic(err)
@@ -191,6 +209,7 @@ func cartman() {
 	}
 	var saveFile bool
 	for {
+		fmt.Println()
 		fmt.Println("That's all the information needed. Would you like to save it to a configuration file? [y/n]")
 		yesOrNoStr, err := reader.ReadString('\n')
 		if err != nil {
@@ -210,7 +229,9 @@ func cartman() {
 	}
 
 	if saveFile {
+		fmt.Println()
 		fmt.Println("Where to save the file? [" + DEFAULT_CONFIG_FILENAME + "]")
+		fmt.Println("Hint: If the program doesn't have permission to write, it will crash.")
 		filename, err := reader.ReadString('\n')
 		if err != nil {
 			panic(err)
@@ -243,6 +264,7 @@ func cartman() {
 	if !saveFile {
 		var yesOrNo bool
 		for {
+			fmt.Println()
 			fmt.Println("File not saved. Login to the network right away? [Y/n]")
 			if err != nil {
 				panic(err)
@@ -264,6 +286,7 @@ func cartman() {
 			}
 		}
 		if yesOrNo {
+			fmt.Println()
 			fmt.Println("Log in via web portal...")
 			err := _login(&Settings)
 			if err != nil {
