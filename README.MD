@@ -117,10 +117,14 @@ However, you can't use GoDNS behind a NAT router because the Internet traffic at
 
 ## How to compile sdunetd
 
+Go 1.13 or higher version is **required**.
+
+This project uses **go module**. If you live in Mainland China, you might need to configure a proxy like [goproxy.cn](https://github.com/goproxy/goproxy.cn) to execute the following code.
+
 ```bash
 git clone https://github.com/SadPencil/sdunetd
 cd sdunetd
-go get -v
+# go get -v # the dependencies will be automatically downloaded with `go build` as go module is enabled
 CGO_ENABLED=0 GOOS=linux GOARCH=arm go build -ldflags=all="-s -w" -o build/sdunetd-linux-arm
 CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags=all="-s -w" -o build/sdunetd-linux-arm64
 CGO_ENABLED=0 GOOS=linux GOARCH=386 go build -ldflags=all="-s -w" -o build/sdunetd-linux-386
