@@ -12,6 +12,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
@@ -21,14 +23,10 @@ func version() {
 }
 
 func _getNetworkInterface(settings *Settings) (interfaceWtf string) {
-	if settings.Network.StrictMode {
-		interfaceWtf = settings.Network.Interface
-	}
 	return interfaceWtf
 }
 
 func _login(settings *Settings) (err error) {
-
 	interfaceWtf := _getNetworkInterface(settings)
 
 	_, sduIPv4, err := getSduUserInfo(settings.Account.Scheme, settings.Account.AuthServer, interfaceWtf)
@@ -37,7 +35,6 @@ func _login(settings *Settings) (err error) {
 	}
 
 	return loginDigest(settings.Account.Scheme, settings.Account.AuthServer, settings.Account.Username, settings.Account.Password, sduIPv4, interfaceWtf)
-
 }
 
 func _logout(settings *Settings) (err error) {
@@ -196,9 +193,45 @@ func main() {
 		return
 	}
 
-	//loop
 	version()
+
+	// main loop
+
+	// set up handler for SIGINT and SIGTERM
+	pauseNow := false
+	exitNow := false
+	c := make(chan os.Signal)
+	signal.Notify(c, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	go func() {
+		for s := range c {
+			switch s {
+			case syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT:
+				fmt.Println("Exiting...")
+				if Settings.Control.LogoutWhenExit {
+					pauseNow = true
+					for retry := 0; retry < 3; retry++ {
+						fmt.Println("Logging out...")
+						err := _logout(&Settings)
+						if err != nil {
+							log.Println("Logout failed.", err)
+						} else {
+							break
+						}
+					}
+					pauseNow = false
+				}
+				exitNow = true
+			default:
+			}
+		}
+	}()
 	for {
+		for pauseNow && !exitNow {
+			time.Sleep(time.Second)
+		}
+		if exitNow {
+			break
+		}
 		if !detectNetwork(&Settings) {
 			log.Println("Network is down. Log in via web portal...")
 			err := _login(&Settings)
@@ -214,7 +247,13 @@ func main() {
 		} else {
 			log.Println("Network is up. Nothing to do.")
 		}
-		time.Sleep(time.Duration(Settings.Control.Interval) * time.Second)
+		for i := int32(0); i < Settings.Control.Interval; i++ {
+			if exitNow {
+				break
+			}
+			time.Sleep(time.Second)
+		}
+
 	}
 
 }

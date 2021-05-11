@@ -32,13 +32,14 @@ type Network struct {
 }
 
 type Control struct {
-	Interval int32 `json:"interval"`
+	Interval       int32 `json:"interval"`
+	LogoutWhenExit bool  `json:"logout_when_exit"`
 }
 
 type Settings struct {
 	Account Account `json:"account"`
 	Log     Log     `json:"log"`
-	Network Network `json:"network"`
+	//Network Network `json:"network"`
 	Control Control `json:"control"`
 }
 

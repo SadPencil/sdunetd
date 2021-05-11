@@ -13,9 +13,7 @@ import (
 	"fmt"
 	"golang.org/x/crypto/ssh/terminal"
 	"log"
-	"net"
 	"os"
-	"strconv"
 	"strings"
 	"syscall"
 )
@@ -80,7 +78,6 @@ func cartman() {
 		}
 	}
 
-	var probablyIPv6 bool = false
 	for {
 		fmt.Println()
 		fmt.Println("Question 3. What's the authentication server's ip address? [" + DEFAULT_AUTH_SERVER + "]")
@@ -94,7 +91,6 @@ func cartman() {
 			fmt.Println(err)
 		} else {
 			if strings.Count(Settings.Account.AuthServer, ":") >= 2 {
-				probablyIPv6 = true
 				fmt.Println("Hint: Add a pair of [] with the IPv6 address. Omit this hint if you have already done so.")
 				fmt.Println("Example 1 \t [2001:250:5800:11::1]")
 				fmt.Println("Example 2 \t [2001:250:5800:11::1]:8080")
@@ -103,6 +99,7 @@ func cartman() {
 			break
 		}
 	}
+
 	for {
 		fmt.Println()
 		fmt.Println("Question 4. Does the authentication server use HTTP protocol, or HTTPS? [" + DEFAULT_AUTH_SCHEME + "]")
@@ -120,93 +117,111 @@ func cartman() {
 
 	for {
 		fmt.Println()
-		fmt.Println("Question 5.")
-		var ips []string
-		var interfaceStrings []string
-		{
-			_, ip, err := getSduUserInfo(Settings.Account.Scheme,
-				Settings.Account.AuthServer, "")
-
-			//ip, err := getIPFromChallenge(Settings.Account.Scheme,
-			//	Settings.Account.AuthServer,
-			//	Settings.Account.Username,
-			//	"",
-			//	"",
-			//	false)
-			if err != nil {
-				fmt.Println(err)
-				ips = append(ips, "")
-				//忽略错误继续
-				fmt.Println("Warning: Failed to connected to the authentication server.")
-				fmt.Println()
-			} else {
-				ips = append(ips, ip)
-				interfaceStrings = append(interfaceStrings, "")
-				fmt.Println("["+fmt.Sprint(len(ips)-1)+"]", "\t", ip, "\t", "[Auto detect]")
-			}
-		}
-
-		interfaces, err := net.Interfaces()
+		fmt.Println("Question 5. Do you want to log out the network when the program get terminated? [y/N]")
+		yesOrNoStr, err := reader.ReadString('\n')
 		if err != nil {
 			panic(err)
 		}
-
-		for _, interfaceWtf := range interfaces {
-			ip, err := GetIPv4FromInterface(interfaceWtf.Name)
-			if err == nil {
-				ips = append(ips, ip)
-				interfaceStrings = append(interfaceStrings, interfaceWtf.Name)
-				fmt.Println("["+fmt.Sprint(len(ips)-1)+"]", "\t", ip, "\t", interfaceWtf.Name)
-			}
-		}
-
-		if len(ips) == 0 {
-			fmt.Println("There is not even a network interface with a valid IPv4 address.")
-			fmt.Println("Screw you guys, I'm going home.")
-			return
-		}
-
-		fmt.Println("Network interfaces are listed above. Which one is connected to the Portal network? [0]")
-		fmt.Println("Hint: It is recommended to choose auto detect as long as the reported IP address is correct, even if you have only one network interface available. Choosing a specific network interface instead of auto detect causes different behavior and it's not recommended unless you have multiple default routes via multiple network interfaces.")
-		if probablyIPv6 {
-			fmt.Println("Hint: You might have specified an IPv6 authentication server. Choose auto detect, as all but auto detect will not work.")
-		}
-		choice, err := reader.ReadString('\n')
-		if err != nil {
-			panic(err)
-		}
-		choice = strings.TrimSpace(choice)
-
-		var choiceID int
-		if choice == "" {
-			choiceID = 0
-		} else {
-			choiceID, err = strconv.Atoi(choice)
-			if err != nil {
-				fmt.Println(err)
-				continue
-			}
-		}
-
-		if choiceID == 0 {
-			Settings.Network.Interface = ""
-			Settings.Network.CustomIP = ""
-			Settings.Network.StrictMode = false
-		} else if choiceID > 0 && choiceID < len(interfaceStrings) {
-			Settings.Network.Interface = interfaceStrings[choiceID]
-			Settings.Network.CustomIP = ""
-			Settings.Network.StrictMode = true
-		} else {
-			fmt.Println("You think I'm a retard? Fuck you, asshole.")
-			continue
-		}
-
-		if err != nil {
-			fmt.Println(err)
-		} else {
+		yesOrNoStr = strings.ToLower(strings.TrimSpace(yesOrNoStr))
+		if yesOrNoStr == "" || yesOrNoStr == "n" {
+			Settings.Control.LogoutWhenExit = false
 			break
+		} else if yesOrNoStr == "y" {
+			Settings.Control.LogoutWhenExit = true
+			break
+		} else {
+			fmt.Println("All you need to do is to answer me yes or no. Don't be a pussy.")
 		}
 	}
+	//for {
+	//	fmt.Println()
+	//	fmt.Println("Question 5.")
+	//	var ips []string
+	//	var interfaceStrings []string
+	//	{
+	//		_, ip, err := getSduUserInfo(Settings.Account.Scheme,
+	//			Settings.Account.AuthServer, "")
+	//
+	//		//ip, err := getIPFromChallenge(Settings.Account.Scheme,
+	//		//	Settings.Account.AuthServer,
+	//		//	Settings.Account.Username,
+	//		//	"",
+	//		//	"",
+	//		//	false)
+	//		if err != nil {
+	//			fmt.Println(err)
+	//			ips = append(ips, "")
+	//			//忽略错误继续
+	//			fmt.Println("Warning: Failed to connected to the authentication server.")
+	//			fmt.Println()
+	//		} else {
+	//			ips = append(ips, ip)
+	//			interfaceStrings = append(interfaceStrings, "")
+	//			fmt.Println("["+fmt.Sprint(len(ips)-1)+"]", "\t", ip, "\t", "[Auto detect]")
+	//		}
+	//	}
+	//
+	//	interfaces, err := net.Interfaces()
+	//	if err != nil {
+	//		panic(err)
+	//	}
+	//
+	//	for _, interfaceWtf := range interfaces {
+	//		ip, err := GetIPv4FromInterface(interfaceWtf.Name)
+	//		if err == nil {
+	//			ips = append(ips, ip)
+	//			interfaceStrings = append(interfaceStrings, interfaceWtf.Name)
+	//			fmt.Println("["+fmt.Sprint(len(ips)-1)+"]", "\t", ip, "\t", interfaceWtf.Name)
+	//		}
+	//	}
+	//
+	//	if len(ips) == 0 {
+	//		fmt.Println("There is not even a network interface with a valid IPv4 address.")
+	//		fmt.Println("Screw you guys, I'm going home.")
+	//		return
+	//	}
+	//
+	//	fmt.Println("Network interfaces are listed above. Which one is connected to the Portal network? [0]")
+	//	fmt.Println("Hint: It is recommended to choose auto detect as long as the reported IP address is correct, even if you have only one network interface available. Choosing a specific network interface instead of auto detect causes different behavior and it's not recommended unless you have multiple default routes via multiple network interfaces.")
+	//	if probablyIPv6 {
+	//		fmt.Println("Hint: You might have specified an IPv6 authentication server. Choose auto detect, as all but auto detect will not work.")
+	//	}
+	//	choice, err := reader.ReadString('\n')
+	//	if err != nil {
+	//		panic(err)
+	//	}
+	//	choice = strings.TrimSpace(choice)
+	//
+	//	var choiceID int
+	//	if choice == "" {
+	//		choiceID = 0
+	//	} else {
+	//		choiceID, err = strconv.Atoi(choice)
+	//		if err != nil {
+	//			fmt.Println(err)
+	//			continue
+	//		}
+	//	}
+	//
+	//	if choiceID == 0 {
+	//		Settings.Network.Interface = ""
+	//		Settings.Network.CustomIP = ""
+	//		Settings.Network.StrictMode = false
+	//	} else if choiceID > 0 && choiceID < len(interfaceStrings) {
+	//		Settings.Network.Interface = interfaceStrings[choiceID]
+	//		Settings.Network.CustomIP = ""
+	//		Settings.Network.StrictMode = true
+	//	} else {
+	//		fmt.Println("You think I'm a retard? Fuck you, asshole.")
+	//		continue
+	//	}
+	//
+	//	if err != nil {
+	//		fmt.Println(err)
+	//	} else {
+	//		break
+	//	}
+	//}
 	var saveFile bool
 	for {
 		fmt.Println()
@@ -245,7 +260,6 @@ func cartman() {
 		if err != nil {
 			fmt.Println(err)
 		} else {
-
 			jsonBytes, err := json.Marshal(Settings)
 			if err != nil {
 				fmt.Println(err)
@@ -266,9 +280,6 @@ func cartman() {
 		for {
 			fmt.Println()
 			fmt.Println("File not saved. Login to the network right away? [Y/n]")
-			if err != nil {
-				panic(err)
-			}
 			yesOrNoStr, err := reader.ReadString('\n')
 			if err != nil {
 				panic(err)
