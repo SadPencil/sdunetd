@@ -3,9 +3,9 @@ Embedded SRUN3000 Portal Client for SDU-Qingdao
 _________
 
 # 适用院校
-如有未列出的适用院校，请通过 issue 补充
+如有未列出的适用院校、科研单位或其他单位，请通过 issue 补充
 - 山东大学（济南无线网、青岛有线网、青岛无线网）
-- 中科院计算所
+- 中科院计算所（有线网、无线网）
 
 Ver 1.1 is once suitable for Shandong University, Qingdao Campus, up to 2018. No longer supported.
 
