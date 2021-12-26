@@ -147,12 +147,3 @@ CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags=all="-s -w" -o build/sd
 CGO_ENABLED=0 GOOS=freebsd GOARCH=amd64 go build -ldflags=all="-s -w" -o build/sdunetd-freebsd-amd64
 upx --best --ultra-brute build/*
 ```
-
-## the cURL version of sdunetd
-For unknown reasons, the Linux version's “strict mode" might not work properly when multiple default route through different network interfaces are set, while curl works well in this situation. Thus, we provided an additional cURL version.
-
-Note, this version is not build for Windows.
-### How to compile the cURL version
-Add `-tags="curl"` to the end of `go build`. 
-
-Example: `CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags=all="-s -w" -o build/sdunetd-curl-linux-amd64 -tags="curl"`
