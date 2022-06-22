@@ -32,8 +32,9 @@ type Network struct {
 }
 
 type Control struct {
-	Interval       int32 `json:"interval"`
-	LogoutWhenExit bool  `json:"logout_when_exit"`
+	Interval              int32  `json:"interval"`
+	LogoutWhenExit        bool   `json:"logout_when_exit"`
+	OnlineDetectionMethod string `json:"online_detection_method"`
 }
 
 type Settings struct {
@@ -46,7 +47,11 @@ type Settings struct {
 func NewSettings() Settings {
 	return Settings{
 		Account: Account{Scheme: DEFAULT_AUTH_SCHEME, AuthServer: DEFAULT_AUTH_SERVER},
-		Control: Control{Interval: DEFAULT_INTERVAL},
+		Control: Control{
+			Interval:              DEFAULT_INTERVAL,
+			OnlineDetectionMethod: DEFAULT_ONLINE_DETECTION_METHOD,
+			LogoutWhenExit:        false,
+		},
 	}
 }
 
@@ -59,6 +64,7 @@ func LoadSettings(configPath string) (settings Settings, err error) {
 		return NewSettings(), err
 	}
 
+	settings = NewSettings()
 	err = json.Unmarshal(file, &settings)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Error occurs while unmarshalling config file.")

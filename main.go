@@ -8,9 +8,12 @@ THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -43,6 +46,33 @@ func _logout(settings *Settings) (err error) {
 }
 
 func detectNetwork(settings *Settings) bool {
+	if settings.Control.OnlineDetectionMethod == ONLINE_DETECTION_METHOD_AUTH {
+		return detectNetworkWithAuthServer(settings)
+	} else if settings.Control.OnlineDetectionMethod == ONLINE_DETECTION_METHOD_MS {
+		return detectNetworkWithMicrosoft()
+	} else {
+		return detectNetworkWithAuthServer(settings)
+	}
+}
+
+func detectNetworkWithMicrosoft() bool {
+	resp, err := http.Get("http://www.msftconnecttest.com/connecttest.txt")
+	if err != nil {
+		log.Println("Error: " + err.Error())
+		return false
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+
+	if err != nil {
+		log.Println("Error: " + err.Error())
+		return false
+	}
+
+	return bytes.Compare(body, []byte("Microsoft Connect Test")) == 0
+}
+
+func detectNetworkWithAuthServer(settings *Settings) bool {
 	//client, err := getHttpClient(settings.Network.StrictMode, settings.Network.CustomIP, settings.Network.Interface)
 	//if err != nil {
 	//	log.Println("[ERROR]", err)
