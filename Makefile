@@ -17,6 +17,7 @@ build-all:
 	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags=all="-s -w" -o build/sdunetd-linux-arm64
 	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags=all="-s -w" -o build/sdunetd-windows-amd64.exe
 	CGO_ENABLED=0 GOOS=windows GOARCH=386 go build -ldflags=all="-s -w" -o build/sdunetd-windows-386.exe
+	CGO_ENABLED=0 GOOS=windows GOARCH=arm64 go build -ldflags=all="-s -w" -o build/sdunetd-windows-arm64.exe
 	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags=all="-s -w" -o build/sdunetd-darwin-amd64
 	CGO_ENABLED=0 GOOS=freebsd GOARCH=amd64 go build -ldflags=all="-s -w" -o build/sdunetd-freebsd-amd64
 
