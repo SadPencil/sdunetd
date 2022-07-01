@@ -27,4 +27,4 @@ upx: build-all
 clean:
 	rm -r build/
 
-all: build-all test
+all: build-all upx
