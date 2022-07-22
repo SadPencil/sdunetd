@@ -1,5 +1,9 @@
 # Update log of sdunetd
 
+## [v2.3.1](https://github.com/SadPencil/sdunetd/releases/tag/v2.3.1)
+- The network secion is removed in the configuration file
+- Support detecting the Internet via either the auth server or the online service. In the configuration file, set `online_detection_method` to `auth` for the auth server, or `ms` for the detection url by Microsoft
+
 ## [v2.2.2](https://github.com/SadPencil/sdunetd/releases/tag/v2.2.2)
 
 The 2.2.2 version. Suitable for Shandong University, Qingdao Campus, since March 2019.
