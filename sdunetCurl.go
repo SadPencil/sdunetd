@@ -104,7 +104,7 @@ func getChallengeID(scheme, server, rawUsername, sduIPv4 string, interfaceWtf st
 }
 
 func curlGet(url string, headers []string, interfaceWtf string) (content []byte, err error) {
-	fmt.Println("debugcurl")
+	fmt.Println("debugcurl, interface:", interfaceWtf)
 	easy := curl.EasyInit()
 	defer easy.Cleanup()
 
