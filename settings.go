@@ -40,7 +40,7 @@ type Control struct {
 type Settings struct {
 	Account Account `json:"account"`
 	Log     Log     `json:"log"`
-	//Network Network `json:"network"`
+	Network Network `json:"network"`
 	Control Control `json:"control"`
 }
 

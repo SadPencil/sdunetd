@@ -1,5 +1,5 @@
-//go:build !curl
-// +build !curl
+//go:build curl
+// +build curl
 
 /*
 Copyright © 2018-2019 Sad Pencil
@@ -12,4 +12,4 @@ package main
 
 const NAME string = "sdunetd"
 const DESCRIPTION string = "Embedded SRUN3000 Portal Client for SDU-Qingdao"
-const VERSION string = "v2.4.0"
+const VERSION string = "v2.4.0-curl"

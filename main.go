@@ -26,6 +26,9 @@ func version() {
 }
 
 func _getNetworkInterface(settings *Settings) (interfaceWtf string) {
+	if settings.Network.StrictMode {
+		interfaceWtf = settings.Network.Interface
+	}
 	return interfaceWtf
 }
 
