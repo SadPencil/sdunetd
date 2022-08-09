@@ -16,7 +16,7 @@ Ver 2.0+ is suitable for Shandong University, Qingdao Campus, since March 2019.
 
 ## Copyright
 
-Copyright © 2018-2019 Sad Pencil &lt;me@pencil.live&gt;
+Copyright © 2018-2022 Sad Pencil
 
 MIT License
 

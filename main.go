@@ -1,5 +1,5 @@
 /*
-Copyright © 2018-2019 Sad Pencil
+Copyright © 2018-2022 Sad Pencil
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -11,9 +11,9 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"github.com/SadPencil/sdunetd/sdunet"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -25,38 +25,26 @@ func version() {
 	fmt.Println(DESCRIPTION)
 }
 
-func _getNetworkInterface(settings *Settings) (interfaceWtf string) {
-	return interfaceWtf
-}
-
-func _login(settings *Settings) (err error) {
-	interfaceWtf := _getNetworkInterface(settings)
-
-	_, sduIPv4, err := getSduUserInfo(settings.Account.Scheme, settings.Account.AuthServer, interfaceWtf)
-	if err != nil {
-		return err
+func getNetworkInterface(settings *Settings) (networkInterface string) {
+	if settings.Network.StrictMode {
+		return settings.Network.Interface
 	}
-
-	return loginDigest(settings.Account.Scheme, settings.Account.AuthServer, settings.Account.Username, settings.Account.Password, sduIPv4, interfaceWtf)
+	return ""
 }
 
-func _logout(settings *Settings) (err error) {
-	interfaceWtf := _getNetworkInterface(settings)
-	return logout(settings.Account.Scheme, settings.Account.AuthServer, settings.Account.Username, interfaceWtf)
-}
-
-func detectNetwork(settings *Settings) bool {
+func detectNetwork(settings *Settings, manager *sdunet.Manager) bool {
 	if settings.Control.OnlineDetectionMethod == ONLINE_DETECTION_METHOD_AUTH {
-		return detectNetworkWithAuthServer(settings)
+		return detectNetworkWithAuthServer(manager)
 	} else if settings.Control.OnlineDetectionMethod == ONLINE_DETECTION_METHOD_MS {
-		return detectNetworkWithMicrosoft()
+		return detectNetworkWithMicrosoft(manager)
 	} else {
-		return detectNetworkWithAuthServer(settings)
+		return detectNetworkWithAuthServer(manager)
 	}
 }
 
-func detectNetworkWithMicrosoft() bool {
-	resp, err := http.Get("http://www.msftconnecttest.com/connecttest.txt")
+func detectNetworkWithMicrosoft(manager *sdunet.Manager) bool {
+	client, err := manager.GetNewHttpClient()
+	resp, err := client.Get("http://www.msftconnecttest.com/connecttest.txt")
 	if err != nil {
 		log.Println("Error: " + err.Error())
 		return false
@@ -72,20 +60,14 @@ func detectNetworkWithMicrosoft() bool {
 	return bytes.Compare(body, []byte("Microsoft Connect Test")) == 0
 }
 
-func detectNetworkWithAuthServer(settings *Settings) bool {
-	//client, err := getHttpClient(settings.Network.StrictMode, settings.Network.CustomIP, settings.Network.Interface)
-	//if err != nil {
-	//	log.Println("[ERROR]", err)
-	//	return false
-	//}
-	interfaceWtf := _getNetworkInterface(settings)
-	ret, ipv4, err := getSduUserInfo(settings.Account.Scheme, settings.Account.AuthServer, interfaceWtf)
+func detectNetworkWithAuthServer(manager *sdunet.Manager) bool {
+	info, err := manager.GetUserInfo()
 	if err != nil {
-		log.Println("[ERROR]", err)
+		log.Println(err)
 		return false
 	} else {
-		log.Println("Logined to sdunet. IP Address:", ipv4)
-		return ret
+		log.Println("Logged in to sdunet. IP Address:", info.ClientIP)
+		return true
 	}
 }
 
@@ -143,10 +125,32 @@ func main() {
 	}
 	//required arguments
 	checkInterval(&Settings)
+	if err != nil {
+		panic(err)
+	}
 	err = checkAuthServer(&Settings)
+	if err != nil {
+		panic(err)
+	}
 	err = checkPassword(&Settings)
+	if err != nil {
+		panic(err)
+	}
 	err = checkScheme(&Settings)
+	if err != nil {
+		panic(err)
+	}
 	err = checkUsername(&Settings)
+	if err != nil {
+		panic(err)
+	}
+
+	manager, err := sdunet.GetManager(
+		Settings.Account.Scheme,
+		Settings.Account.AuthServer,
+		Settings.Account.Username,
+		getNetworkInterface(&Settings),
+	)
 	if err != nil {
 		panic(err)
 	}
@@ -154,7 +158,7 @@ func main() {
 	//write log to stdout
 	log.SetOutput(os.Stdout)
 
-	//openfile
+	//open the log file for writing
 	if Settings.Log.Filename != "" {
 		logFile, err := os.OpenFile(Settings.Log.Filename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 		defer logFile.Close()
@@ -169,21 +173,18 @@ func main() {
 	}
 
 	if FlagIPDetect {
-		//client, err := getHttpClient(Settings.Network.StrictMode, Settings.Network.CustomIP, Settings.Network.Interface)
-		interfaceWtf := _getNetworkInterface(&Settings)
-		_, ret, err := getSduUserInfo(Settings.Account.Scheme,
-			Settings.Account.AuthServer, interfaceWtf)
+		info, err := manager.GetUserInfo()
 		if err != nil {
 			log.Panicln(err)
 		}
-		fmt.Println(ret)
+		fmt.Println(info.ClientIP)
 		return
 	}
 
 	if FlagOneshoot {
 		version()
 		log.Println("Log in via web portal...")
-		err := _login(&Settings)
+		err := manager.Login(Settings.Account.Password)
 		if err != nil {
 			log.Println("Login failed.", err)
 			os.Exit(1)
@@ -195,9 +196,9 @@ func main() {
 
 	if FlagTryOneshoot {
 		version()
-		if !detectNetwork(&Settings) {
+		if !detectNetwork(&Settings, &manager) {
 			log.Println("Network is down. Log in via web portal...")
-			err := _login(&Settings)
+			err := manager.Login(Settings.Account.Password)
 			if err != nil {
 				log.Println("Login failed.", err)
 				os.Exit(1)
@@ -213,7 +214,7 @@ func main() {
 	if FlagLogout {
 		version()
 		log.Println("Logout via web portal...")
-		err := _logout(&Settings)
+		err := manager.Logout()
 		if err != nil {
 			log.Println("Logout failed.", err)
 			os.Exit(1)
@@ -241,7 +242,7 @@ func main() {
 					pauseNow = true
 					for retry := 0; retry < 3; retry++ {
 						fmt.Println("Logging out...")
-						err := _logout(&Settings)
+						err := manager.Logout()
 						if err != nil {
 							log.Println("Logout failed.", err)
 						} else {
@@ -262,14 +263,14 @@ func main() {
 		if exitNow {
 			break
 		}
-		if !detectNetwork(&Settings) {
+		if !detectNetwork(&Settings, &manager) {
 			log.Println("Network is down. Log in via web portal...")
-			err := _login(&Settings)
+			err := manager.Login(Settings.Account.Password)
 			if err != nil {
 				log.Println("Login failed.", err)
 			}
 			time.Sleep(time.Duration(5) * time.Second)
-			if !detectNetwork(&Settings) {
+			if !detectNetwork(&Settings, &manager) {
 				log.Println("Network is still down. Retry after", Settings.Control.Interval, " seconds.")
 			} else {
 				log.Println("Network is up.")
