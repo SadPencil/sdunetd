@@ -1,31 +1,37 @@
+SHELL := /bin/bash
+
+BUILD_DIR = build
+GO_BUILD_ARGS = -trimpath -ldflags=all="-s -w"
+export CGO_ENABLED = 0
+
 build:
-	go build -o build/sdunetd
+	go build $(GO_BUILD_ARGS) -o $(BUILD_DIR)/sdunetd
 
 run:
 	go run .
 
 build-all:
-	CGO_ENABLED=0 GOOS=linux GOARCH=arm go build -ldflags=all="-s -w" -o build/sdunetd-linux-arm
-	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags=all="-s -w" -o build/sdunetd-linux-arm64
-	CGO_ENABLED=0 GOOS=linux GOARCH=386 go build -ldflags=all="-s -w" -o build/sdunetd-linux-386
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags=all="-s -w" -o build/sdunetd-linux-amd64
-	CGO_ENABLED=0 GOMIPS=softfloat GOOS=linux GOARCH=mips go build -ldflags=all="-s -w" -o build/sdunetd-linux-mips-softfloat
-	CGO_ENABLED=0 GOOS=linux GOARCH=mips64 go build -ldflags=all="-s -w" -o build/sdunetd-linux-mips64
-	CGO_ENABLED=0 GOMIPS=softfloat GOOS=linux GOARCH=mipsle go build -ldflags=all="-s -w" -o build/sdunetd-linux-mipsle-softfloat
-	CGO_ENABLED=0 GOOS=linux GOARCH=mips64le go build -ldflags=all="-s -w" -o build/sdunetd-linux-mips64le
-	CGO_ENABLED=0 GOOS=linux GOARCH=arm go build -ldflags=all="-s -w" -o build/sdunetd-linux-arm
-	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags=all="-s -w" -o build/sdunetd-linux-arm64
-	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags=all="-s -w" -o build/sdunetd-windows-amd64.exe
-	CGO_ENABLED=0 GOOS=windows GOARCH=386 go build -ldflags=all="-s -w" -o build/sdunetd-windows-386.exe
-	CGO_ENABLED=0 GOOS=windows GOARCH=arm64 go build -ldflags=all="-s -w" -o build/sdunetd-windows-arm64.exe
-	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags=all="-s -w" -o build/sdunetd-darwin-amd64
-	CGO_ENABLED=0 GOOS=freebsd GOARCH=amd64 go build -ldflags=all="-s -w" -o build/sdunetd-freebsd-amd64
+	GOOS=linux GOARCH=arm go build $(GO_BUILD_ARGS) -o $(BUILD_DIR)/sdunetd-linux-arm
+	GOOS=linux GOARCH=arm64 go build $(GO_BUILD_ARGS) -o $(BUILD_DIR)/sdunetd-linux-arm64
+	GOOS=linux GOARCH=386 go build $(GO_BUILD_ARGS) -o $(BUILD_DIR)/sdunetd-linux-386
+	GOOS=linux GOARCH=amd64 go build $(GO_BUILD_ARGS) -o $(BUILD_DIR)/sdunetd-linux-amd64
+	GOMIPS=softfloat GOOS=linux GOARCH=mips go build $(GO_BUILD_ARGS) -o $(BUILD_DIR)/sdunetd-linux-mips-softfloat
+	GOOS=linux GOARCH=mips64 go build $(GO_BUILD_ARGS) -o $(BUILD_DIR)/sdunetd-linux-mips64
+	GOMIPS=softfloat GOOS=linux GOARCH=mipsle go build $(GO_BUILD_ARGS) -o $(BUILD_DIR)/sdunetd-linux-mipsle-softfloat
+	GOOS=linux GOARCH=mips64le go build $(GO_BUILD_ARGS) -o $(BUILD_DIR)/sdunetd-linux-mips64le
+	GOOS=linux GOARCH=arm go build $(GO_BUILD_ARGS) -o $(BUILD_DIR)/sdunetd-linux-arm
+	GOOS=linux GOARCH=arm64 go build $(GO_BUILD_ARGS) -o $(BUILD_DIR)/sdunetd-linux-arm64
+	GOOS=windows GOARCH=amd64 go build $(GO_BUILD_ARGS) -o $(BUILD_DIR)/sdunetd-windows-amd64.exe
+	GOOS=windows GOARCH=386 go build $(GO_BUILD_ARGS) -o $(BUILD_DIR)/sdunetd-windows-386.exe
+	GOOS=windows GOARCH=arm64 go build $(GO_BUILD_ARGS) -o $(BUILD_DIR)/sdunetd-windows-arm64.exe
+	GOOS=darwin GOARCH=amd64 go build $(GO_BUILD_ARGS) -o $(BUILD_DIR)/sdunetd-darwin-amd64
+	GOOS=freebsd GOARCH=amd64 go build $(GO_BUILD_ARGS) -o $(BUILD_DIR)/sdunetd-freebsd-amd64
 
 upx: build-all
-	upx --best --ultra-brute build/*
+	upx --best --ultra-brute $(BUILD_DIR)/*
 
 clean:
-	rm -r build/
+	rm -r $(BUILD_DIR)
 
 all: build-all upx
 
