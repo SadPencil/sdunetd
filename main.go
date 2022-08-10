@@ -142,8 +142,8 @@ func getManager(settings *setting.Settings) (*sdunet.Manager, error) {
 }
 
 func logout(settings *setting.Settings, exitNow *bool) error {
+	logger.Println("Logout via web portal...")
 	return retryWithSettings(settings, func() error {
-		logger.Println("Logout via web portal...")
 		manager, err := getManager(settings)
 		if err != nil {
 			return err
@@ -158,12 +158,15 @@ func logout(settings *setting.Settings, exitNow *bool) error {
 }
 
 func login(settings *setting.Settings, exitNow *bool) error {
+	logger.Println("Log in via web portal...")
 	return retryWithSettings(settings, func() error {
 		manager, err := getManager(settings)
 		if err != nil {
 			return err
 		}
-		return manager.Login(settings.Account.Password)
+		err = manager.Login(settings.Account.Password)
+		logger.Println("Logged in.")
+		return nil
 	}, exitNow)
 }
 
@@ -188,12 +191,10 @@ func loginIfNotOnline(settings *setting.Settings, exitNow *bool) error {
 			logger.Println(err)
 		}
 
-		logger.Println("Network is down. Log in via web portal...")
+		logger.Println("Network is down.")
 		err = login(settings, exitNow)
 		if err != nil {
 			logger.Println(err)
-		} else {
-			logger.Println("Logged in.")
 		}
 		return err
 	}
@@ -298,12 +299,10 @@ func main() {
 		err := retryWithSettings(settings, func() error {
 			manager, err := getManager(settings)
 			if err != nil {
-				logger.Println(err)
 				return err
 			}
 			info, err := manager.GetUserInfo()
 			if err != nil {
-				logger.Println(err)
 				return err
 			}
 			fmt.Println(info.ClientIP)
@@ -319,7 +318,7 @@ func main() {
 		version()
 		err := login(settings, nil)
 		if err != nil {
-			panic(err)
+			logger.Panicln(err)
 		}
 
 		return
@@ -329,7 +328,7 @@ func main() {
 		version()
 		err := loginIfNotOnline(settings, nil)
 		if err != nil {
-			panic(err)
+			logger.Panicln(err)
 		}
 		return
 	}
@@ -338,7 +337,7 @@ func main() {
 		version()
 		err := logout(settings, nil)
 		if err != nil {
-			panic(err)
+			logger.Panicln(err)
 		}
 		return
 	}
@@ -359,18 +358,7 @@ func main() {
 				logger.Println("Exiting...")
 				if settings.Control.LogoutWhenExit {
 					pauseNow = true
-					_ = retryWithSettings(settings, func() error {
-						logger.Println("Logging out...")
-						manager, err := getManager(settings)
-						if err != nil {
-							return err
-						}
-						err = manager.Logout()
-						if err != nil {
-							return err
-						}
-						return nil
-					}, nil)
+					_ = logout(settings, nil)
 					pauseNow = false
 				}
 				exitNow = true
