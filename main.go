@@ -263,20 +263,29 @@ func main() {
 		if exitNow {
 			break
 		}
-		if !detectNetwork(&Settings, &manager) {
-			log.Println("Network is down. Log in via web portal...")
-			err := manager.Login(Settings.Account.Password)
-			if err != nil {
-				log.Println("Login failed.", err)
-			}
-			time.Sleep(time.Duration(5) * time.Second)
+		for i := int32(0); i < Settings.Control.MaxRetryCount; i++ {
 			if !detectNetwork(&Settings, &manager) {
-				log.Println("Network is still down. Retry after", Settings.Control.Interval, " seconds.")
+				log.Println("Network is down. Log in via web portal...")
+				err := manager.Login(Settings.Account.Password)
+				if err != nil {
+					log.Println("Login failed.", err)
+				}
+				time.Sleep(time.Duration(5) * time.Second)
+				if !detectNetwork(&Settings, &manager) {
+					log.Println("Network is still down.")
+				} else {
+					log.Println("Network is up.")
+					break
+				}
 			} else {
-				log.Println("Network is up.")
+				log.Println("Network is up. Nothing to do.")
+				break
 			}
-		} else {
-			log.Println("Network is up. Nothing to do.")
+
+			if exitNow {
+				break
+			}
+			time.Sleep(time.Duration(RETRY_INTERVAL) * time.Second)
 		}
 		for i := int32(0); i < Settings.Control.Interval; i++ {
 			if exitNow {

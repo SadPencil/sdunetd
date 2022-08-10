@@ -31,6 +31,7 @@ type Network struct {
 }
 
 type Control struct {
+	MaxRetryCount         int32  `json:"max_retry_count"`
 	Interval              int32  `json:"interval"`
 	LogoutWhenExit        bool   `json:"logout_when_exit"`
 	OnlineDetectionMethod string `json:"online_detection_method"`
@@ -48,6 +49,7 @@ func NewSettings() Settings {
 		Account: Account{Scheme: DEFAULT_AUTH_SCHEME, AuthServer: DEFAULT_AUTH_SERVER},
 		Control: Control{
 			Interval:              DEFAULT_INTERVAL,
+			MaxRetryCount:         DEFAULT_MAX_RETRY_COUNT,
 			OnlineDetectionMethod: DEFAULT_ONLINE_DETECTION_METHOD,
 			LogoutWhenExit:        false,
 		},
