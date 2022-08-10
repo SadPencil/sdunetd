@@ -28,7 +28,7 @@ func version() {
 	fmt.Println(DESCRIPTION)
 }
 
-func detectNetwork(settings *setting.Settings, manager *sdunet.Manager) bool {
+func detectNetwork(settings *setting.Settings, manager *sdunet.Manager) (bool, error) {
 	if settings.Control.OnlineDetectionMethod == setting.ONLINE_DETECTION_METHOD_AUTH {
 		return detectNetworkWithAuthServer(manager)
 	} else if settings.Control.OnlineDetectionMethod == setting.ONLINE_DETECTION_METHOD_MS {
@@ -38,32 +38,32 @@ func detectNetwork(settings *setting.Settings, manager *sdunet.Manager) bool {
 	}
 }
 
-func detectNetworkWithMicrosoft(manager *sdunet.Manager) bool {
+func detectNetworkWithMicrosoft(manager *sdunet.Manager) (bool, error) {
 	client, err := manager.GetNewHttpClient()
+	if err != nil {
+		return false, err
+	}
+
 	resp, err := client.Get("http://www.msftconnecttest.com/connecttest.txt")
 	if err != nil {
-		log.Println("Error: " + err.Error())
-		return false
+		return false, err
 	}
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
 
+	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Println("Error: " + err.Error())
-		return false
+		return false, err
 	}
 
-	return bytes.Compare(body, []byte("Microsoft Connect Test")) == 0
+	return bytes.Compare(body, []byte("Microsoft Connect Test")) == 0, nil
 }
 
-func detectNetworkWithAuthServer(manager *sdunet.Manager) bool {
+func detectNetworkWithAuthServer(manager *sdunet.Manager) (bool, error) {
 	info, err := manager.GetUserInfo()
 	if err != nil {
-		log.Println(err)
-		return false
+		return false, err
 	} else {
-		log.Println("Logged in to sdunet. IP Address:", info.ClientIP)
-		return true
+		return info.LoggedIn, nil
 	}
 }
 
@@ -130,6 +130,64 @@ func getManager(settings *setting.Settings) (*sdunet.Manager, error) {
 		_manager = &manager
 	}
 	return _manager, nil
+}
+
+func logout(settings *setting.Settings, exitNow *bool) error {
+	return retryWithSettings(settings, func() error {
+		log.Println("Logout via web portal...")
+		manager, err := getManager(settings)
+		if err != nil {
+			return err
+		}
+		err = manager.Logout()
+		if err != nil {
+			return err
+		}
+		log.Println("Logged out.")
+		return nil
+	}, exitNow)
+}
+
+func login(settings *setting.Settings, exitNow *bool) error {
+	return retryWithSettings(settings, func() error {
+		manager, err := getManager(settings)
+		if err != nil {
+			return err
+		}
+		return manager.Login(settings.Account.Password)
+	}, exitNow)
+}
+
+func loginIfNotOnline(settings *setting.Settings, exitNow *bool) error {
+	isOnline := false
+
+	err := retryWithSettings(settings, func() error {
+		manager, err := getManager(settings)
+		if err != nil {
+			return err
+		}
+		isOnline, err = detectNetwork(settings, manager)
+		return err
+	}, exitNow)
+
+	if err == nil && isOnline {
+		log.Println("Network is up. Nothing to do.")
+		return nil
+	} else {
+		// not online
+		if err != nil {
+			log.Println(err)
+		}
+
+		log.Println("Network is down. Log in via web portal...")
+		err = login(settings, exitNow)
+		if err != nil {
+			log.Println(err)
+		} else {
+			log.Println("Logged in.")
+		}
+		return err
+	}
 }
 
 func main() {
@@ -246,64 +304,28 @@ func main() {
 
 	if FlagOneshoot {
 		version()
-		log.Println("Log in via web portal...")
-		manager, err := getManager(settings)
+		err := login(settings, nil)
 		if err != nil {
-			log.Println("Login failed.", err)
-			os.Exit(1)
+			panic(err)
 		}
-		err = manager.Login(settings.Account.Password)
-		if err != nil {
-			log.Println("Login failed.", err)
-			os.Exit(1)
-		} else {
-			log.Println("Succeed.")
-		}
+
 		return
 	}
 
 	if FlagTryOneshoot {
 		version()
-		manager, err := getManager(settings)
+		err := loginIfNotOnline(settings, nil)
 		if err != nil {
-			log.Println("Login failed.", err)
-			os.Exit(1)
-		}
-		if !detectNetwork(settings, manager) {
-			log.Println("Network is down. Log in via web portal...")
-			err := manager.Login(settings.Account.Password)
-			if err != nil {
-				log.Println("Login failed.", err)
-				os.Exit(1)
-			} else {
-				log.Println("Succeed.")
-			}
-		} else {
-			log.Println("Network is up. Nothing to do.")
+			panic(err)
 		}
 		return
 	}
 
 	if FlagLogout {
 		version()
-		err := retryWithSettings(settings, func() error {
-			log.Println("Logout via web portal...")
-			manager, err := getManager(settings)
-			if err != nil {
-				log.Println("Login failed.", err)
-				return err
-			}
-			err = manager.Logout()
-			if err != nil {
-				log.Println("Logout failed.", err)
-				return err
-			}
-			log.Println("Succeed.")
-			return nil
-
-		}, nil)
+		err := logout(settings, nil)
 		if err != nil {
-			os.Exit(1)
+			panic(err)
 		}
 		return
 	}
@@ -328,12 +350,10 @@ func main() {
 						log.Println("Logging out...")
 						manager, err := getManager(settings)
 						if err != nil {
-							log.Println("Logout failed.", err)
 							return err
 						}
 						err = manager.Logout()
 						if err != nil {
-							log.Println("Logout failed.", err)
 							return err
 						}
 						return nil
@@ -345,6 +365,7 @@ func main() {
 			}
 		}
 	}()
+
 	for {
 		for pauseNow && !exitNow {
 			time.Sleep(time.Second)
@@ -352,23 +373,8 @@ func main() {
 		if exitNow {
 			break
 		}
-		retryWithSettings(settings, func() error {
-			manager, err := getManager(settings)
-			if err != nil {
-				log.Println(err)
-				return err
-			}
-			if detectNetwork(settings, manager) {
-				log.Println("Network is up. Nothing to do.")
-				return nil
-			}
-			log.Println("Network is down. Log in via web portal...")
-			err = manager.Login(settings.Account.Password)
-			if err != nil {
-				log.Println("Login failed.", err)
-			}
-			return err
-		}, &exitNow)
+		_ = loginIfNotOnline(settings, &exitNow)
+
 		for i := int32(0); i < settings.Control.LoopIntervalSec; i++ {
 			if exitNow {
 				break
