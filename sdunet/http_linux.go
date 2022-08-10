@@ -14,18 +14,20 @@ import (
 	"github.com/hashicorp/go-cleanhttp"
 	retryableHttp "github.com/hashicorp/go-retryablehttp"
 	"golang.org/x/sys/unix"
+	"log"
 	"net"
 	"net/http"
 	"syscall"
 	"time"
 )
 
-func getHttpClient(forceNetworkInterface string, timeout time.Duration, retryCount int, retryWait time.Duration) (*http.Client, error) {
+func getHttpClient(forceNetworkInterface string, timeout time.Duration, retryCount int, retryWait time.Duration, logger *log.Logger) (*http.Client, error) {
 	client := retryableHttp.NewClient()
 	client.HTTPClient.Timeout = timeout
 	client.RetryMax = retryCount
 	client.RetryWaitMin = retryWait
 	client.RetryWaitMax = retryWait
+	client.Logger = logger
 
 	if forceNetworkInterface != "" {
 		// https://iximiuz.com/en/posts/go-net-http-setsockopt-example/

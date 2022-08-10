@@ -9,7 +9,6 @@ package utils
 
 import (
 	"errors"
-	"log"
 	"net"
 	"os"
 )
@@ -30,13 +29,11 @@ func PathExists(path string) (bool, error) {
 func GetIPv4FromInterface(networkInterface string) (string, error) {
 	ifaces, err := net.InterfaceByName(networkInterface)
 	if err != nil {
-		log.Println("Can't get network device "+networkInterface+".", err)
 		return "", err
 	}
 
 	addrs, err := ifaces.Addrs()
 	if err != nil {
-		log.Println("Can't get ip address from "+networkInterface+".", err)
 		return "", err
 	}
 

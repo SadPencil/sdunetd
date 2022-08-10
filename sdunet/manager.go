@@ -12,19 +12,22 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"time"
 )
 
 type MangerBase struct {
-	client                *http.Client
+	client *http.Client
+
 	Scheme                string
 	Server                string
 	ForceNetworkInterface string
 	Timeout               time.Duration
 	MaxRetryCount         int
 	RetryWait             time.Duration
+	Logger                *log.Logger
 }
 
 type Manager struct {
@@ -39,7 +42,8 @@ type UserInfo struct {
 }
 
 func GetManager(scheme string, server string, username string, forceNetworkInterface string,
-	timeout time.Duration, maxRetryCount int, retryWait time.Duration) (Manager, error) {
+	timeout time.Duration, maxRetryCount int, retryWait time.Duration,
+	logger *log.Logger) (Manager, error) {
 	base := MangerBase{
 		Scheme:                scheme,
 		Server:                server,
@@ -47,6 +51,7 @@ func GetManager(scheme string, server string, username string, forceNetworkInter
 		Timeout:               timeout,
 		MaxRetryCount:         maxRetryCount,
 		RetryWait:             retryWait,
+		Logger:                logger,
 	}
 	info, err := base.GetUserInfo()
 	if err != nil {
@@ -61,7 +66,7 @@ func GetManager(scheme string, server string, username string, forceNetworkInter
 
 func (m MangerBase) GetHttpClient() (*http.Client, error) {
 	if m.client == nil {
-		client, err := getHttpClient(m.ForceNetworkInterface, m.Timeout, m.MaxRetryCount, m.RetryWait)
+		client, err := getHttpClient(m.ForceNetworkInterface, m.Timeout, m.MaxRetryCount, m.RetryWait, m.Logger)
 		if err != nil {
 			return nil, err
 		}

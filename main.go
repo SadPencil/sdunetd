@@ -23,6 +23,9 @@ import (
 	"time"
 )
 
+var logger *log.Logger
+var verboseLogger *log.Logger
+
 func version() {
 	fmt.Println(NAME, VERSION)
 	fmt.Println(DESCRIPTION)
@@ -125,6 +128,7 @@ func getManager(settings *setting.Settings) (*sdunet.Manager, error) {
 			time.Duration(settings.Network.Timeout)*time.Second,
 			int(settings.Network.MaxRetryCount),
 			time.Duration(settings.Network.RetryIntervalSec)*time.Second,
+			verboseLogger,
 		)
 		if err != nil {
 			return nil, err
@@ -139,7 +143,7 @@ func getManager(settings *setting.Settings) (*sdunet.Manager, error) {
 
 func logout(settings *setting.Settings, exitNow *bool) error {
 	return retryWithSettings(settings, func() error {
-		log.Println("Logout via web portal...")
+		logger.Println("Logout via web portal...")
 		manager, err := getManager(settings)
 		if err != nil {
 			return err
@@ -148,7 +152,7 @@ func logout(settings *setting.Settings, exitNow *bool) error {
 		if err != nil {
 			return err
 		}
-		log.Println("Logged out.")
+		logger.Println("Logged out.")
 		return nil
 	}, exitNow)
 }
@@ -176,20 +180,20 @@ func loginIfNotOnline(settings *setting.Settings, exitNow *bool) error {
 	}, exitNow)
 
 	if err == nil && isOnline {
-		log.Println("Network is up. Nothing to do.")
+		logger.Println("Network is up. Nothing to do.")
 		return nil
 	} else {
 		// not online
 		if err != nil {
-			log.Println(err)
+			logger.Println(err)
 		}
 
-		log.Println("Network is down. Log in via web portal...")
+		logger.Println("Network is down. Log in via web portal...")
 		err = login(settings, exitNow)
 		if err != nil {
-			log.Println(err)
+			logger.Println(err)
 		} else {
-			log.Println("Logged in.")
+			logger.Println("Logged in.")
 		}
 		return err
 	}
@@ -200,7 +204,7 @@ func main() {
 	flag.BoolVar(&FlagShowHelp, "h", false, "standalone: show the help.")
 
 	var FlagShowVersion bool
-	flag.BoolVar(&FlagShowVersion, "v", false, "standalone: show the version.")
+	flag.BoolVar(&FlagShowVersion, "V", false, "standalone: show the version.")
 
 	var FlagConfigFile string
 	flag.StringVar(&FlagConfigFile, "c", "", "the config.json file. Leave it blank to use the interact mode.")
@@ -219,6 +223,9 @@ func main() {
 
 	var FlagLogout bool
 	flag.BoolVar(&FlagLogout, "l", false, "standalone: logout from the network for once.")
+
+	var FlagVerbose bool
+	flag.BoolVar(&FlagVerbose, "v", false, "option: output verbose log")
 
 	flag.Parse()
 
@@ -270,39 +277,45 @@ func main() {
 	}
 
 	//write log to stdout
-	log.SetOutput(os.Stdout)
+	logger = log.New(os.Stderr, "", log.LstdFlags)
 
 	//open the log file for writing
 	if settings.Log.Filename != "" {
 		logFile, err := os.OpenFile(settings.Log.Filename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 		defer logFile.Close()
 		if err != nil {
-			log.Panicln(err)
+			logger.Panicln(err)
 			return
 		}
-		log.SetOutput(logFile)
+		logger = log.New(logFile, "", log.LstdFlags)
 	}
 	if FlagNoAttribute {
-		log.SetFlags(0)
+		logger.SetFlags(0)
+	}
+
+	if FlagVerbose {
+		verboseLogger = logger
+	} else {
+		verboseLogger = log.New(ioutil.Discard, "", 0)
 	}
 
 	if FlagIPDetect {
 		err := retryWithSettings(settings, func() error {
 			manager, err := getManager(settings)
 			if err != nil {
-				log.Println(err)
+				logger.Println(err)
 				return err
 			}
 			info, err := manager.GetUserInfo()
 			if err != nil {
-				log.Println(err)
+				logger.Println(err)
 				return err
 			}
 			fmt.Println(info.ClientIP)
 			return nil
 		}, nil)
 		if err != nil {
-			log.Panicln(err)
+			logger.Panicln(err)
 		}
 		return
 	}
@@ -348,11 +361,11 @@ func main() {
 		for s := range c {
 			switch s {
 			case syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT:
-				log.Println("Exiting...")
+				logger.Println("Exiting...")
 				if settings.Control.LogoutWhenExit {
 					pauseNow = true
 					_ = retryWithSettings(settings, func() error {
-						log.Println("Logging out...")
+						logger.Println("Logging out...")
 						manager, err := getManager(settings)
 						if err != nil {
 							return err
