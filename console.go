@@ -11,9 +11,10 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"github.com/SadPencil/sdunetd/sdunet"
 	"github.com/SadPencil/sdunetd/setting"
 	"github.com/SadPencil/sdunetd/utils"
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 	"net"
 	"os"
 	"runtime"
@@ -66,7 +67,7 @@ func cartman() {
 	for {
 		fmt.Println()
 		fmt.Println("Question 2. What's your password? []")
-		bytePassword, err := terminal.ReadPassword(int(syscall.Stdin))
+		bytePassword, err := term.ReadPassword(int(syscall.Stdin))
 		fmt.Println() // it's necessary to add a new line after user's input
 		if err != nil {
 			panic(err)
@@ -147,7 +148,8 @@ func cartman() {
 				var err error
 				var ip string
 				for {
-					manager, err := getManager(settings)
+					var manager *sdunet.Manager
+					manager, err = getManager(settings)
 					if err != nil {
 						break
 					}
@@ -156,18 +158,19 @@ func cartman() {
 						break
 					}
 					ip = info.ClientIP
+					break
 				}
 
 				if err != nil {
-					fmt.Println(err)
-					ips = append(ips, "")
+					ip = ""
 					fmt.Println("Warning: Failed to connected to the authentication server.")
+					fmt.Println(err)
 					fmt.Println()
-				} else {
-					ips = append(ips, ip)
-					interfaceStrings = append(interfaceStrings, "")
-					fmt.Println("["+fmt.Sprint(len(ips)-1)+"]", "\t", ip, "\t", "[Auto detect]")
 				}
+
+				ips = append(ips, ip)
+				interfaceStrings = append(interfaceStrings, "")
+				fmt.Println("["+fmt.Sprint(len(ips)-1)+"]", "\t", ip, "\t", "[Auto detect]")
 			}
 
 			interfaces, err := net.Interfaces()

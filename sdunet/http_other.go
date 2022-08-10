@@ -12,14 +12,20 @@ package sdunet
 
 import (
 	"errors"
+	retryableHttp "github.com/hashicorp/go-retryablehttp"
 	"net/http"
 	"time"
 )
 
-func getHttpClient(forceNetworkInterface string, timeout time.Duration) (client *http.Client, err error) {
-	client = &http.Client{Timeout: timeout}
+func getHttpClient(forceNetworkInterface string, timeout time.Duration, retryCount int, retryWait time.Duration) (*http.Client, error) {
+	client := retryableHttp.NewClient()
+	client.HTTPClient.Timeout = timeout
+	client.RetryMax = retryCount
+	client.RetryWaitMin = retryWait
+	client.RetryWaitMax = retryWait
+
 	if forceNetworkInterface != "" {
 		return nil, errors.New("the strict mode is only available in Linux")
 	}
-	return client, nil
+	return client.StandardClient(), nil
 }

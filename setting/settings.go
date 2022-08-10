@@ -24,9 +24,11 @@ type Log struct {
 }
 
 type Network struct {
-	Interface  string `json:"interface"`
-	StrictMode bool   `json:"strict"`
-	Timeout    int32  `json:"timeout"`
+	Interface        string `json:"interface"`
+	StrictMode       bool   `json:"strict"`
+	Timeout          int32  `json:"timeout"`
+	MaxRetryCount    int32  `json:"max_retry_count"`
+	RetryIntervalSec int32  `json:"retry_interval_sec"`
 }
 
 type Control struct {
@@ -55,9 +57,11 @@ func NewSettings() *Settings {
 			LogoutWhenExit:        false,
 		},
 		Network: Network{
-			Interface:  "",
-			StrictMode: false,
-			Timeout:    3,
+			Interface:        "",
+			StrictMode:       false,
+			Timeout:          3,
+			MaxRetryCount:    3,
+			RetryIntervalSec: 1,
 		},
 	}
 }

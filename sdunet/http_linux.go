@@ -11,6 +11,8 @@ THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 package sdunet
 
 import (
+	"github.com/hashicorp/go-cleanhttp"
+	retryableHttp "github.com/hashicorp/go-retryablehttp"
 	"golang.org/x/sys/unix"
 	"net"
 	"net/http"
@@ -18,12 +20,21 @@ import (
 	"time"
 )
 
-func getHttpClient(forceNetworkInterface string, timeout time.Duration) (client *http.Client, err error) {
-	client = &http.Client{Timeout: timeout}
+func getHttpClient(forceNetworkInterface string, timeout time.Duration, retryCount int, retryWait time.Duration) (*http.Client, error) {
+	client := retryableHttp.NewClient()
+	client.HTTPClient.Timeout = timeout
+	client.RetryMax = retryCount
+	client.RetryWaitMin = retryWait
+	client.RetryWaitMax = retryWait
+
 	if forceNetworkInterface != "" {
 		// https://iximiuz.com/en/posts/go-net-http-setsockopt-example/
 		// https://linux.die.net/man/7/socket
+		transport := cleanhttp.DefaultPooledTransport()
 		dialer := &net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+			DualStack: true,
 			Control: func(network, address string, conn syscall.RawConn) error {
 				var operr error
 				if err := conn.Control(func(fd uintptr) {
@@ -34,10 +45,8 @@ func getHttpClient(forceNetworkInterface string, timeout time.Duration) (client 
 				return operr
 			},
 		}
-
-		client.Transport = &http.Transport{
-			DialContext: dialer.DialContext,
-		}
+		transport.DialContext = dialer.DialContext
+		client.HTTPClient.Transport = transport
 	}
-	return client, nil
+	return client.StandardClient(), nil
 }

@@ -39,7 +39,7 @@ func detectNetwork(settings *setting.Settings, manager *sdunet.Manager) (bool, e
 }
 
 func detectNetworkWithMicrosoft(manager *sdunet.Manager) (bool, error) {
-	client, err := manager.GetNewHttpClient()
+	client, err := manager.GetHttpClient()
 	if err != nil {
 		return false, err
 	}
@@ -123,7 +123,12 @@ func getManager(settings *setting.Settings) (*sdunet.Manager, error) {
 			settings.Account.Username,
 			networkInterface,
 			time.Duration(settings.Network.Timeout)*time.Second,
+			int(settings.Network.MaxRetryCount),
+			time.Duration(settings.Network.RetryIntervalSec)*time.Second,
 		)
+		if err != nil {
+			return nil, err
+		}
 		if err != nil {
 			return nil, err
 		}

@@ -18,10 +18,13 @@ import (
 )
 
 type MangerBase struct {
+	client                *http.Client
 	Scheme                string
 	Server                string
 	ForceNetworkInterface string
 	Timeout               time.Duration
+	MaxRetryCount         int
+	RetryWait             time.Duration
 }
 
 type Manager struct {
@@ -35,12 +38,15 @@ type UserInfo struct {
 	LoggedIn bool
 }
 
-func GetManager(scheme string, server string, username string, forceNetworkInterface string, timeout time.Duration) (Manager, error) {
+func GetManager(scheme string, server string, username string, forceNetworkInterface string,
+	timeout time.Duration, maxRetryCount int, retryWait time.Duration) (Manager, error) {
 	base := MangerBase{
 		Scheme:                scheme,
 		Server:                server,
 		ForceNetworkInterface: forceNetworkInterface,
 		Timeout:               timeout,
+		MaxRetryCount:         maxRetryCount,
+		RetryWait:             retryWait,
 	}
 	info, err := base.GetUserInfo()
 	if err != nil {
@@ -53,8 +59,15 @@ func GetManager(scheme string, server string, username string, forceNetworkInter
 	}, nil
 }
 
-func (m MangerBase) GetNewHttpClient() (client *http.Client, err error) {
-	return getHttpClient(m.ForceNetworkInterface, m.Timeout)
+func (m MangerBase) GetHttpClient() (*http.Client, error) {
+	if m.client == nil {
+		client, err := getHttpClient(m.ForceNetworkInterface, m.Timeout, m.MaxRetryCount, m.RetryWait)
+		if err != nil {
+			return nil, err
+		}
+		m.client = client
+	}
+	return m.client, nil
 }
 
 func (m Manager) getRawChallenge() (map[string]interface{}, error) {
@@ -91,7 +104,7 @@ func (m MangerBase) httpJsonQuery(relativeUrl string, getParams url.Values, json
 		return nil, errors.New("invalid relative url")
 	}
 
-	client, err := m.GetNewHttpClient()
+	client, err := m.GetHttpClient()
 	if err != nil {
 		return nil, err
 	}
