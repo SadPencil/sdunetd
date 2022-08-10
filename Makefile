@@ -35,4 +35,4 @@ clean:
 
 all: build-all upx
 
-.PHONY:all build clean upx build-all run
+.PHONY: all build clean upx build-all run
