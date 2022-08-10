@@ -1,7 +1,16 @@
 # Update log of sdunetd
 
+## [v2.4.0](https://github.com/SadPencil/sdunetd/releases/tag/v2.4.0)
+- The network section is re-added in the configuration file.
+The strict mode is now re-supported, behaves like curl, but it is now a Linux-specific feature. See [this page](https://stackoverflow.com/a/73295452/7774607) for technical details.
+- Breaking change: the configuration file is now updated. Please re-generate the config file.
+- Breaking change: the version parameter is changed to `-V` instead of `-v`.
+- Breaking change: `-v` now stands for verbose output.
+- Breaking change: the log is now by default written to stderr, instead of stdout.
+- Retries are now supported, specified in the configuration file. 
+
 ## [v2.3.1](https://github.com/SadPencil/sdunetd/releases/tag/v2.3.1)
-- The network secion is removed in the configuration file
+- The network section is removed in the configuration file
 - Support detecting the Internet via either the auth server or the online service. In the configuration file, set `online_detection_method` to `auth` for the auth server, or `ms` for the detection url by Microsoft
 
 ## [v2.2.2](https://github.com/SadPencil/sdunetd/releases/tag/v2.2.2)
