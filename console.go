@@ -118,28 +118,28 @@ func cartman() {
 		}
 	}
 
-	for {
-		fmt.Println()
-		fmt.Println("Question 5. Do you want to log out the network when the program get terminated? [y/N]")
-		yesOrNoStr, err := reader.ReadString('\n')
-		if err != nil {
-			panic(err)
-		}
-		yesOrNoStr = strings.ToLower(strings.TrimSpace(yesOrNoStr))
-		if yesOrNoStr == "" || yesOrNoStr == "n" {
-			Settings.Control.LogoutWhenExit = false
-			break
-		} else if yesOrNoStr == "y" {
-			Settings.Control.LogoutWhenExit = true
-			break
-		} else {
-			fmt.Println("All you need to do is to answer me yes or no. Don't be a pussy.")
-		}
-	}
+	//for {
+	//	fmt.Println()
+	//	fmt.Println("Question 5. Do you want to log out the network when the program get terminated? [y/N]")
+	//	yesOrNoStr, err := reader.ReadString('\n')
+	//	if err != nil {
+	//		panic(err)
+	//	}
+	//	yesOrNoStr = strings.ToLower(strings.TrimSpace(yesOrNoStr))
+	//	if yesOrNoStr == "" || yesOrNoStr == "n" {
+	//		Settings.Control.LogoutWhenExit = false
+	//		break
+	//	} else if yesOrNoStr == "y" {
+	//		Settings.Control.LogoutWhenExit = true
+	//		break
+	//	} else {
+	//		fmt.Println("All you need to do is to answer me yes or no. Don't be a pussy.")
+	//	}
+	//}
 	if runtime.GOOS == "linux" {
 		for {
 			fmt.Println()
-			fmt.Println("Question 6. (Linux only)")
+			fmt.Println("Question 5. (Linux only)")
 			var ips []string
 			var interfaceStrings []string
 			{
