@@ -9,6 +9,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"flag"
 	"fmt"
 	"github.com/SadPencil/sdunetd/sdunet"
@@ -71,6 +72,52 @@ func detectNetworkWithAuthServer(manager *sdunet.Manager) bool {
 	}
 }
 
+type Action func() error
+
+func retry(retryTimes int32, retryInterval int32, action Action, exitNow *bool) error {
+	for i := int32(0); i < retryTimes; i++ {
+		err := action()
+		if err == nil {
+			return nil
+		}
+		if i == retryTimes-1 {
+			return err
+		}
+
+		if exitNow != nil && *exitNow {
+			return errors.New("exit triggered")
+		}
+
+		for i := int32(0); i < retryInterval; i++ {
+			time.Sleep(time.Second)
+
+			if exitNow != nil && *exitNow {
+				return errors.New("exit triggered")
+			}
+		}
+	}
+	// impossible path
+	// make compiler happy
+	return errors.New("assert failed")
+}
+
+var _manager *sdunet.Manager
+
+func getManager(settings *Settings) (*sdunet.Manager, error) {
+	if _manager == nil {
+		manager, err := sdunet.GetManager(
+			settings.Account.Scheme,
+			settings.Account.AuthServer,
+			settings.Account.Username,
+			getNetworkInterface(settings),
+		)
+		if err != nil {
+			return nil, err
+		}
+		_manager = &manager
+	}
+	return _manager, nil
+}
 func main() {
 	var FlagShowHelp bool
 	flag.BoolVar(&FlagShowHelp, "h", false, "standalone: show the help.")
@@ -119,38 +166,28 @@ func main() {
 		return
 	}
 
-	Settings, err := LoadSettings(FlagConfigFile)
+	settings, err := LoadSettings(FlagConfigFile)
 	if err != nil {
 		panic(err)
 	}
 	//required arguments
-	checkInterval(&Settings)
+	checkInterval(&settings)
 	if err != nil {
 		panic(err)
 	}
-	err = checkAuthServer(&Settings)
+	err = checkAuthServer(&settings)
 	if err != nil {
 		panic(err)
 	}
-	err = checkPassword(&Settings)
+	err = checkPassword(&settings)
 	if err != nil {
 		panic(err)
 	}
-	err = checkScheme(&Settings)
+	err = checkScheme(&settings)
 	if err != nil {
 		panic(err)
 	}
-	err = checkUsername(&Settings)
-	if err != nil {
-		panic(err)
-	}
-
-	manager, err := sdunet.GetManager(
-		Settings.Account.Scheme,
-		Settings.Account.AuthServer,
-		Settings.Account.Username,
-		getNetworkInterface(&Settings),
-	)
+	err = checkUsername(&settings)
 	if err != nil {
 		panic(err)
 	}
@@ -159,8 +196,8 @@ func main() {
 	log.SetOutput(os.Stdout)
 
 	//open the log file for writing
-	if Settings.Log.Filename != "" {
-		logFile, err := os.OpenFile(Settings.Log.Filename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	if settings.Log.Filename != "" {
+		logFile, err := os.OpenFile(settings.Log.Filename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 		defer logFile.Close()
 		if err != nil {
 			log.Panicln(err)
@@ -173,18 +210,35 @@ func main() {
 	}
 
 	if FlagIPDetect {
-		info, err := manager.GetUserInfo()
+		err := retry(settings.Control.MaxRetryCount, RETRY_INTERVAL, func() error {
+			manager, err := getManager(&settings)
+			if err != nil {
+				log.Println(err)
+				return err
+			}
+			info, err := manager.GetUserInfo()
+			if err != nil {
+				log.Println(err)
+				return err
+			}
+			fmt.Println(info.ClientIP)
+			return nil
+		}, nil)
 		if err != nil {
 			log.Panicln(err)
 		}
-		fmt.Println(info.ClientIP)
 		return
 	}
 
 	if FlagOneshoot {
 		version()
 		log.Println("Log in via web portal...")
-		err := manager.Login(Settings.Account.Password)
+		manager, err := getManager(&settings)
+		if err != nil {
+			log.Println("Login failed.", err)
+			os.Exit(1)
+		}
+		err = manager.Login(settings.Account.Password)
 		if err != nil {
 			log.Println("Login failed.", err)
 			os.Exit(1)
@@ -196,9 +250,14 @@ func main() {
 
 	if FlagTryOneshoot {
 		version()
-		if !detectNetwork(&Settings, &manager) {
+		manager, err := getManager(&settings)
+		if err != nil {
+			log.Println("Login failed.", err)
+			os.Exit(1)
+		}
+		if !detectNetwork(&settings, manager) {
 			log.Println("Network is down. Log in via web portal...")
-			err := manager.Login(Settings.Account.Password)
+			err := manager.Login(settings.Account.Password)
 			if err != nil {
 				log.Println("Login failed.", err)
 				os.Exit(1)
@@ -213,13 +272,24 @@ func main() {
 
 	if FlagLogout {
 		version()
-		log.Println("Logout via web portal...")
-		err := manager.Logout()
-		if err != nil {
-			log.Println("Logout failed.", err)
-			os.Exit(1)
-		} else {
+		err := retry(settings.Control.MaxRetryCount, RETRY_INTERVAL, func() error {
+			log.Println("Logout via web portal...")
+			manager, err := getManager(&settings)
+			if err != nil {
+				log.Println("Login failed.", err)
+				return err
+			}
+			err = manager.Logout()
+			if err != nil {
+				log.Println("Logout failed.", err)
+				return err
+			}
 			log.Println("Succeed.")
+			return nil
+
+		}, nil)
+		if err != nil {
+			os.Exit(1)
 		}
 		return
 	}
@@ -237,18 +307,23 @@ func main() {
 		for s := range c {
 			switch s {
 			case syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT:
-				fmt.Println("Exiting...")
-				if Settings.Control.LogoutWhenExit {
+				log.Println("Exiting...")
+				if settings.Control.LogoutWhenExit {
 					pauseNow = true
-					for retry := 0; retry < 3; retry++ {
-						fmt.Println("Logging out...")
-						err := manager.Logout()
+					_ = retry(settings.Control.MaxRetryCount, RETRY_INTERVAL, func() error {
+						log.Println("Logging out...")
+						manager, err := getManager(&settings)
 						if err != nil {
 							log.Println("Logout failed.", err)
-						} else {
-							break
+							return err
 						}
-					}
+						err = manager.Logout()
+						if err != nil {
+							log.Println("Logout failed.", err)
+							return err
+						}
+						return nil
+					}, nil)
 					pauseNow = false
 				}
 				exitNow = true
@@ -263,31 +338,24 @@ func main() {
 		if exitNow {
 			break
 		}
-		for i := int32(0); i < Settings.Control.MaxRetryCount; i++ {
-			if !detectNetwork(&Settings, &manager) {
-				log.Println("Network is down. Log in via web portal...")
-				err := manager.Login(Settings.Account.Password)
-				if err != nil {
-					log.Println("Login failed.", err)
-				}
-				time.Sleep(time.Duration(5) * time.Second)
-				if !detectNetwork(&Settings, &manager) {
-					log.Println("Network is still down.")
-				} else {
-					log.Println("Network is up.")
-					break
-				}
-			} else {
+		retry(settings.Control.MaxRetryCount, RETRY_INTERVAL, func() error {
+			manager, err := getManager(&settings)
+			if err != nil {
+				log.Println(err)
+				return err
+			}
+			if detectNetwork(&settings, manager) {
 				log.Println("Network is up. Nothing to do.")
-				break
+				return nil
 			}
-
-			if exitNow {
-				break
+			log.Println("Network is down. Log in via web portal...")
+			err = manager.Login(settings.Account.Password)
+			if err != nil {
+				log.Println("Login failed.", err)
 			}
-			time.Sleep(time.Duration(RETRY_INTERVAL) * time.Second)
-		}
-		for i := int32(0); i < Settings.Control.Interval; i++ {
+			return err
+		}, &exitNow)
+		for i := int32(0); i < settings.Control.Interval; i++ {
 			if exitNow {
 				break
 			}
