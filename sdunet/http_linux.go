@@ -15,10 +15,11 @@ import (
 	"net"
 	"net/http"
 	"syscall"
+	"time"
 )
 
-func getHttpClient(forceNetworkInterface string) (client *http.Client, err error) {
-	client = &http.Client{}
+func getHttpClient(forceNetworkInterface string, timeout time.Duration) (client *http.Client, err error) {
+	client = &http.Client{Timeout: timeout}
 	if forceNetworkInterface != "" {
 		// https://iximiuz.com/en/posts/go-net-http-setsockopt-example/
 		// https://linux.die.net/man/7/socket

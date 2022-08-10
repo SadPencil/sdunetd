@@ -11,7 +11,8 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/SadPencil/sdunetd/sdunet"
+	"github.com/SadPencil/sdunetd/setting"
+	"github.com/SadPencil/sdunetd/utils"
 	"golang.org/x/crypto/ssh/terminal"
 	"net"
 	"os"
@@ -22,7 +23,7 @@ import (
 )
 
 func cartman() {
-	Settings := NewSettings()
+	settings := setting.NewSettings()
 	reader := bufio.NewReader(os.Stdin)
 
 	fmt.Println("Looks like the config file doesn't exist.")
@@ -51,11 +52,11 @@ func cartman() {
 		fmt.Println()
 		fmt.Println("Question 1. What's your username? []")
 
-		Settings.Account.Username, err = reader.ReadString('\n')
+		settings.Account.Username, err = reader.ReadString('\n')
 		if err != nil {
 			panic(err)
 		}
-		err = checkUsername(&Settings)
+		err = checkUsername(settings)
 		if err != nil {
 			fmt.Println(err)
 		} else {
@@ -70,30 +71,30 @@ func cartman() {
 		if err != nil {
 			panic(err)
 		} else {
-			Settings.Account.Password = string(bytePassword)
+			settings.Account.Password = string(bytePassword)
 		}
-		err = checkPassword(&Settings)
+		err = checkPassword(settings)
 		if err != nil {
 			fmt.Println(err)
 		} else {
-			fmt.Println("Great. Your password contains", fmt.Sprint(len(Settings.Account.Password)), "characters.")
+			fmt.Println("Great. Your password contains", fmt.Sprint(len(settings.Account.Password)), "characters.")
 			break
 		}
 	}
 
 	for {
 		fmt.Println()
-		fmt.Println("Question 3. What's the authentication server's ip address? [" + DEFAULT_AUTH_SERVER + "]")
+		fmt.Println("Question 3. What's the authentication server's ip address? [" + setting.DEFAULT_AUTH_SERVER + "]")
 		fmt.Println("Hint: You can also write down the server's FQDN if necessary. You may specify either an IPv4 or IPv6 server.")
-		Settings.Account.AuthServer, err = reader.ReadString('\n')
+		settings.Account.AuthServer, err = reader.ReadString('\n')
 		if err != nil {
 			panic(err)
 		}
-		err = checkAuthServer(&Settings)
+		err = checkAuthServer(settings)
 		if err != nil {
 			fmt.Println(err)
 		} else {
-			if strings.Count(Settings.Account.AuthServer, ":") >= 2 {
+			if strings.Count(settings.Account.AuthServer, ":") >= 2 {
 				fmt.Println("Hint: Add a pair of [] with the IPv6 address. Omit this hint if you have already done so.")
 				fmt.Println("Example 1 \t [2001:250:5800:11::1]")
 				fmt.Println("Example 2 \t [2001:250:5800:11::1]:8080")
@@ -105,12 +106,12 @@ func cartman() {
 
 	for {
 		fmt.Println()
-		fmt.Println("Question 4. Does the authentication server use HTTP protocol, or HTTPS? [" + DEFAULT_AUTH_SCHEME + "]")
-		Settings.Account.Scheme, err = reader.ReadString('\n')
+		fmt.Println("Question 4. Does the authentication server use HTTP protocol, or HTTPS? [" + setting.DEFAULT_AUTH_SCHEME + "]")
+		settings.Account.Scheme, err = reader.ReadString('\n')
 		if err != nil {
 			panic(err)
 		}
-		err = checkScheme(&Settings)
+		err = checkScheme(settings)
 		if err != nil {
 			fmt.Println(err)
 		} else {
@@ -127,10 +128,10 @@ func cartman() {
 	//	}
 	//	yesOrNoStr = strings.ToLower(strings.TrimSpace(yesOrNoStr))
 	//	if yesOrNoStr == "" || yesOrNoStr == "n" {
-	//		Settings.Control.LogoutWhenExit = false
+	//		settings.Control.LogoutWhenExit = false
 	//		break
 	//	} else if yesOrNoStr == "y" {
-	//		Settings.Control.LogoutWhenExit = true
+	//		settings.Control.LogoutWhenExit = true
 	//		break
 	//	} else {
 	//		fmt.Println("All you need to do is to answer me yes or no. Don't be a pussy.")
@@ -146,8 +147,7 @@ func cartman() {
 				var err error
 				var ip string
 				for {
-					var manager sdunet.Manager
-					manager, err = sdunet.GetManager(Settings.Account.Scheme, Settings.Account.AuthServer, Settings.Account.Username, "")
+					manager, err := getManager(settings)
 					if err != nil {
 						break
 					}
@@ -176,7 +176,7 @@ func cartman() {
 			}
 
 			for _, networkInterface := range interfaces {
-				ip, err := GetIPv4FromInterface(networkInterface.Name)
+				ip, err := utils.GetIPv4FromInterface(networkInterface.Name)
 				if err == nil {
 					ips = append(ips, ip)
 					interfaceStrings = append(interfaceStrings, networkInterface.Name)
@@ -212,11 +212,11 @@ func cartman() {
 			}
 
 			if choiceID == 0 {
-				Settings.Network.Interface = ""
-				Settings.Network.StrictMode = false
+				settings.Network.Interface = ""
+				settings.Network.StrictMode = false
 			} else if choiceID > 0 && choiceID < len(interfaceStrings) {
-				Settings.Network.Interface = interfaceStrings[choiceID]
-				Settings.Network.StrictMode = true
+				settings.Network.Interface = interfaceStrings[choiceID]
+				settings.Network.StrictMode = true
 			} else {
 				fmt.Println("Make a valid selection, please. If you are not sure, just hit the enter key to select [0]. You are a fucking asshole.")
 				continue
@@ -232,7 +232,7 @@ func cartman() {
 
 	{
 		fmt.Println()
-		fmt.Println("That's all the information needed. Please save it to a configuration file. Where to save the file? [" + DEFAULT_CONFIG_FILENAME + "]")
+		fmt.Println("That's all the information needed. Please save it to a configuration file. Where to save the file? [" + setting.DEFAULT_CONFIG_FILENAME + "]")
 		fmt.Println("Hint: If the program doesn't have permission to write, it will crash.")
 		filename, err := reader.ReadString('\n')
 		if err != nil {
@@ -240,14 +240,14 @@ func cartman() {
 		}
 		filename = strings.TrimSpace(filename)
 		if filename == "" {
-			filename = DEFAULT_CONFIG_FILENAME
+			filename = setting.DEFAULT_CONFIG_FILENAME
 		}
 		f, err := os.Create(filename)
 		defer f.Close()
 		if err != nil {
 			fmt.Println(err)
 		} else {
-			jsonBytes, err := json.Marshal(Settings)
+			jsonBytes, err := json.Marshal(settings)
 			if err != nil {
 				fmt.Println(err)
 			} else {

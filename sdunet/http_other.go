@@ -13,10 +13,11 @@ package sdunet
 import (
 	"errors"
 	"net/http"
+	"time"
 )
 
-func getHttpClient(forceNetworkInterface string) (client *http.Client, err error) {
-	client = &http.Client{}
+func getHttpClient(forceNetworkInterface string, timeout time.Duration) (client *http.Client, err error) {
+	client = &http.Client{Timeout: timeout}
 	if forceNetworkInterface != "" {
 		return nil, errors.New("the strict mode is only available in Linux")
 	}

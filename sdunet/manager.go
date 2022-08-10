@@ -14,12 +14,14 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"time"
 )
 
 type MangerBase struct {
 	Scheme                string
 	Server                string
 	ForceNetworkInterface string
+	Timeout               time.Duration
 }
 
 type Manager struct {
@@ -33,11 +35,12 @@ type UserInfo struct {
 	LoggedIn bool
 }
 
-func GetManager(scheme string, server string, username string, forceNetworkInterface string) (Manager, error) {
+func GetManager(scheme string, server string, username string, forceNetworkInterface string, timeout time.Duration) (Manager, error) {
 	base := MangerBase{
 		Scheme:                scheme,
 		Server:                server,
 		ForceNetworkInterface: forceNetworkInterface,
+		Timeout:               timeout,
 	}
 	info, err := base.GetUserInfo()
 	if err != nil {
@@ -51,7 +54,7 @@ func GetManager(scheme string, server string, username string, forceNetworkInter
 }
 
 func (m MangerBase) GetNewHttpClient() (client *http.Client, err error) {
-	return getHttpClient(m.ForceNetworkInterface)
+	return getHttpClient(m.ForceNetworkInterface, m.Timeout)
 }
 
 func (m Manager) getRawChallenge() (map[string]interface{}, error) {

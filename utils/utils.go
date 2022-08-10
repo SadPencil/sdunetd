@@ -5,7 +5,7 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package main
+package utils
 
 import (
 	"errors"
@@ -27,16 +27,16 @@ func PathExists(path string) (bool, error) {
 }
 
 //GetIPv4FromInterface gets an IPv4 address from the specific interface
-func GetIPv4FromInterface(forceNetworkInterface string) (string, error) {
-	ifaces, err := net.InterfaceByName(forceNetworkInterface)
+func GetIPv4FromInterface(networkInterface string) (string, error) {
+	ifaces, err := net.InterfaceByName(networkInterface)
 	if err != nil {
-		log.Println("Can't get network device "+forceNetworkInterface+".", err)
+		log.Println("Can't get network device "+networkInterface+".", err)
 		return "", err
 	}
 
 	addrs, err := ifaces.Addrs()
 	if err != nil {
-		log.Println("Can't get ip address from "+forceNetworkInterface+".", err)
+		log.Println("Can't get ip address from "+networkInterface+".", err)
 		return "", err
 	}
 
@@ -74,5 +74,5 @@ func GetIPv4FromInterface(forceNetworkInterface string) (string, error) {
 		return ip.String(), nil
 
 	}
-	return "", errors.New("can't get a vaild address from " + forceNetworkInterface)
+	return "", errors.New("can't get a vaild address from " + networkInterface)
 }

@@ -9,14 +9,15 @@ package main
 
 import (
 	"errors"
+	"github.com/SadPencil/sdunetd/setting"
 	"strings"
 )
 
-func checkAuthServer(settings *Settings) (err error) {
+func checkAuthServer(settings *setting.Settings) (err error) {
 	settings.Account.AuthServer = strings.TrimSpace(settings.Account.AuthServer)
 
 	if settings.Account.AuthServer == "" {
-		settings.Account.AuthServer = DEFAULT_AUTH_SERVER
+		settings.Account.AuthServer = setting.DEFAULT_AUTH_SERVER
 	}
 
 	if len(settings.Account.AuthServer) >= 5 {
@@ -32,7 +33,7 @@ func checkAuthServer(settings *Settings) (err error) {
 
 	return nil
 }
-func checkUsername(settings *Settings) (err error) {
+func checkUsername(settings *setting.Settings) (err error) {
 	settings.Account.Username = strings.TrimSpace(settings.Account.Username)
 
 	if settings.Account.Username == "" {
@@ -41,7 +42,7 @@ func checkUsername(settings *Settings) (err error) {
 
 	return nil
 }
-func checkPassword(settings *Settings) (err error) {
+func checkPassword(settings *setting.Settings) (err error) {
 	settings.Account.Password = strings.TrimSpace(settings.Account.Password)
 
 	if settings.Account.Password == "" {
@@ -50,11 +51,11 @@ func checkPassword(settings *Settings) (err error) {
 
 	return nil
 }
-func checkScheme(settings *Settings) (err error) {
+func checkScheme(settings *setting.Settings) (err error) {
 	settings.Account.Scheme = strings.ToLower(strings.TrimSpace(settings.Account.Scheme))
 
 	if settings.Account.Scheme == "" {
-		settings.Account.Scheme = DEFAULT_AUTH_SCHEME
+		settings.Account.Scheme = setting.DEFAULT_AUTH_SCHEME
 	} else if strings.Contains(settings.Account.Scheme, "fuck") {
 		return errors.New("Fuck you! You are a fucking asshole.")
 	} else if !(settings.Account.Scheme == "http" || settings.Account.Scheme == "https") {
@@ -62,8 +63,9 @@ func checkScheme(settings *Settings) (err error) {
 	}
 	return nil
 }
-func checkInterval(settings *Settings) {
-	if settings.Control.Interval == 0 {
-		settings.Control.Interval = DEFAULT_INTERVAL
+func checkInterval(settings *setting.Settings) error {
+	if settings.Control.LoopIntervalSec == 0 {
+		return errors.New("interval should be more than 0 seconds")
 	}
+	return nil
 }
