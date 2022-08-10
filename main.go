@@ -23,8 +23,8 @@ import (
 	"time"
 )
 
-var logger *log.Logger
-var verboseLogger *log.Logger
+var logger *log.Logger = log.New(os.Stderr, "", log.LstdFlags)
+var verboseLogger *log.Logger = log.New(ioutil.Discard, "", 0)
 
 func version() {
 	fmt.Println(NAME, VERSION)
@@ -276,9 +276,6 @@ func main() {
 		panic(err)
 	}
 
-	//write log to stdout
-	logger = log.New(os.Stderr, "", log.LstdFlags)
-
 	//open the log file for writing
 	if settings.Log.Filename != "" {
 		logFile, err := os.OpenFile(settings.Log.Filename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
@@ -295,8 +292,6 @@ func main() {
 
 	if FlagVerbose {
 		verboseLogger = logger
-	} else {
-		verboseLogger = log.New(ioutil.Discard, "", 0)
 	}
 
 	if FlagIPDetect {
