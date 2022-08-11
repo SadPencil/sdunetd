@@ -83,11 +83,11 @@ WantedBy=multi-user.target
 START=60
  
 start() { 
-/usr/local/bin/sdunetd -c /etc/sdunetd/config.json >/dev/null 2>&1 &
+  (/usr/local/bin/sdunetd -c /etc/sdunetd/config.json -m -o - 2>&1 | logger -t sdunetd) &
 }
 
 stop() { 
-killall sdunetd
+  killall sdunetd
 }
 ```
 
