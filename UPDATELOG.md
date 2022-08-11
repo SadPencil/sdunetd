@@ -7,6 +7,7 @@ The strict mode is now re-supported, behaves like curl, but it is now a Linux-sp
 - Breaking change: the version parameter is changed to `-V` instead of `-v`.
 - Breaking change: `-v` now stands for verbose output.
 - Breaking change: the log is now by default written to stderr, instead of stdout.
+- Breaking change: the log output is now controlled by `-o` parameter, instead of the configuration file.
 - Retries are now supported, specified in the configuration file. 
 
 ## [v2.3.1](https://github.com/SadPencil/sdunetd/releases/tag/v2.3.1)
