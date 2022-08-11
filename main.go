@@ -210,6 +210,9 @@ func main() {
 	var FlagConfigFile string
 	flag.StringVar(&FlagConfigFile, "c", "", "the config.json file. Leave it blank to use the interact mode.")
 
+	var FlagLogOutput string
+	flag.StringVar(&FlagLogOutput, "o", "", "set the output file of log message. Empty means stderr, and - means stdout.")
+
 	var FlagNoAttribute bool
 	flag.BoolVar(&FlagNoAttribute, "m", false, "option: output log without attributes. Turn it on when running as a systemd service.")
 
@@ -278,8 +281,12 @@ func main() {
 	}
 
 	//open the log file for writing
-	if settings.Log.Filename != "" {
-		logFile, err := os.OpenFile(settings.Log.Filename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	if FlagLogOutput == "" {
+		log.New(os.Stderr, "", log.LstdFlags)
+	} else if FlagLogOutput == "-" {
+		log.New(os.Stdout, "", log.LstdFlags)
+	} else {
+		logFile, err := os.OpenFile(FlagLogOutput, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 		defer logFile.Close()
 		if err != nil {
 			logger.Panicln(err)

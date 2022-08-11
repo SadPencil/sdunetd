@@ -19,10 +19,6 @@ type Account struct {
 	Scheme     string `json:"scheme"`
 }
 
-type Log struct {
-	Filename string `json:"filename"`
-}
-
 type Network struct {
 	Interface        string `json:"interface"`
 	StrictMode       bool   `json:"strict"`
@@ -41,7 +37,6 @@ type Control struct {
 
 type Settings struct {
 	Account Account `json:"account"`
-	Log     Log     `json:"log"`
 	Network Network `json:"network"`
 	Control Control `json:"control"`
 }
