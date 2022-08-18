@@ -165,6 +165,9 @@ func login(settings *setting.Settings, exitNow *bool) error {
 			return err
 		}
 		err = manager.Login(settings.Account.Password)
+		if err != nil {
+			return err
+		}
 		logger.Println("Logged in.")
 		return nil
 	}, exitNow)
