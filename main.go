@@ -34,7 +34,6 @@ func version() {
 }
 
 func detectNetwork(ctx context.Context, settings *setting.Settings, manager *sdunet.Manager) (bool, error) {
-	// TODO context
 	if settings.Control.OnlineDetectionMethod == setting.ONLINE_DETECTION_METHOD_AUTH {
 		return detectNetworkWithAuthServer(ctx, manager)
 	} else if settings.Control.OnlineDetectionMethod == setting.ONLINE_DETECTION_METHOD_MS {
@@ -50,7 +49,6 @@ func detectNetworkWithMicrosoft(ctx context.Context, manager *sdunet.Manager) (b
 		return false, err
 	}
 
-	// TODO context
 	req, err := http.NewRequestWithContext(ctx, "GET", "http://www.msftconnecttest.com/connecttest.txt", nil)
 	if err != nil {
 		return false, err
