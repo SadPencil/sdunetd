@@ -9,6 +9,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/SadPencil/sdunetd/sdunet"
@@ -150,11 +151,11 @@ func cartman() {
 				var ip string
 				for {
 					var manager *sdunet.Manager
-					manager, err = getManager(settings)
+					manager, err = getManager(context.Background(), settings)
 					if err != nil {
 						break
 					}
-					info, err := manager.GetUserInfo()
+					info, err := manager.GetUserInfo(context.Background())
 					if err != nil {
 						break
 					}

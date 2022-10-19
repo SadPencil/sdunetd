@@ -29,7 +29,6 @@ type MangerBase struct {
 	MaxRetryCount         int
 	RetryWait             time.Duration
 	Logger                *log.Logger
-	Context               context.Context
 }
 
 type Manager struct {
@@ -43,7 +42,7 @@ type UserInfo struct {
 	LoggedIn bool
 }
 
-func GetManager(scheme string, server string, username string, forceNetworkInterface string) (Manager, error) {
+func GetManager(ctx context.Context, scheme string, server string, username string, forceNetworkInterface string) (Manager, error) {
 	base := MangerBase{
 		Scheme:                scheme,
 		Server:                server,
@@ -52,9 +51,8 @@ func GetManager(scheme string, server string, username string, forceNetworkInter
 		MaxRetryCount:         3,
 		RetryWait:             1 * time.Second,
 		Logger:                log.Default(),
-		Context:               context.Background(),
 	}
-	info, err := base.GetUserInfo()
+	info, err := base.GetUserInfo(ctx)
 	if err != nil {
 		return Manager{}, err
 	}
@@ -76,8 +74,8 @@ func (m MangerBase) GetHttpClient() (*http.Client, error) {
 	return m.client, nil
 }
 
-func (m Manager) getRawChallenge() (map[string]interface{}, error) {
-	return m.httpJsonQuery(
+func (m Manager) getRawChallenge(ctx context.Context) (map[string]interface{}, error) {
+	return m.httpJsonQuery(ctx,
 		"/cgi-bin/get_challenge",
 		map[string][]string{
 			"username": {m.Username},
@@ -87,15 +85,15 @@ func (m Manager) getRawChallenge() (map[string]interface{}, error) {
 	)
 }
 
-func (m MangerBase) getRawUserInfo() (map[string]interface{}, error) {
-	return m.httpJsonQuery(
+func (m MangerBase) getRawUserInfo(ctx context.Context) (map[string]interface{}, error) {
+	return m.httpJsonQuery(ctx,
 		"/cgi-bin/rad_user_info",
 		map[string][]string{},
 		"jQuery",
 	)
 }
-func (m MangerBase) GetUserInfo() (UserInfo, error) {
-	output, err := m.getRawUserInfo()
+func (m MangerBase) GetUserInfo(ctx context.Context) (UserInfo, error) {
+	output, err := m.getRawUserInfo(ctx)
 	if err != nil {
 		return UserInfo{}, err
 	}
@@ -105,7 +103,7 @@ func (m MangerBase) GetUserInfo() (UserInfo, error) {
 	}, nil
 }
 
-func (m MangerBase) httpJsonQuery(relativeUrl string, getParams url.Values, jsonCallback string) (map[string]interface{}, error) {
+func (m MangerBase) httpJsonQuery(ctx context.Context, relativeUrl string, getParams url.Values, jsonCallback string) (map[string]interface{}, error) {
 	if relativeUrl[0] != '/' {
 		return nil, errors.New("invalid relative url")
 	}
@@ -115,7 +113,7 @@ func (m MangerBase) httpJsonQuery(relativeUrl string, getParams url.Values, json
 		return nil, err
 	}
 
-	req, err := http.NewRequestWithContext(m.Context, "GET", m.Scheme+"://"+m.Server+relativeUrl, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", m.Scheme+"://"+m.Server+relativeUrl, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -154,16 +152,16 @@ func (m MangerBase) httpJsonQuery(relativeUrl string, getParams url.Values, json
 	return output, nil
 }
 
-func (m Manager) getChallengeID() (string, error) {
-	output, err := m.getRawChallenge()
+func (m Manager) getChallengeID(ctx context.Context) (string, error) {
+	output, err := m.getRawChallenge(ctx)
 	if err != nil {
 		return "", err
 	}
 	return output["challenge"].(string), nil
 }
 
-func (m Manager) Login(password string) error {
-	challenge, err := m.getChallengeID()
+func (m Manager) Login(ctx context.Context, password string) error {
+	challenge, err := m.getChallengeID(ctx)
 	if err != nil {
 		return err
 	}
@@ -174,7 +172,7 @@ func (m Manager) Login(password string) error {
 		return err
 	}
 
-	output, err := m.httpJsonQuery(
+	output, err := m.httpJsonQuery(ctx,
 		"/cgi-bin/srun_portal",
 		map[string][]string{
 			"action":   {"login"},
@@ -201,8 +199,8 @@ func (m Manager) Login(password string) error {
 	}
 }
 
-func (m Manager) Logout() error {
-	output, err := m.httpJsonQuery(
+func (m Manager) Logout(ctx context.Context) error {
+	output, err := m.httpJsonQuery(ctx,
 		"/cgi-bin/srun_portal",
 		map[string][]string{
 			"ac_id":    {"1"},

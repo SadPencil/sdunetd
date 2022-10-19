@@ -9,14 +9,16 @@ package main
 
 import (
 	"bytes"
-	"errors"
+	"context"
 	"flag"
 	"fmt"
 	"github.com/SadPencil/sdunetd/sdunet"
 	"github.com/SadPencil/sdunetd/setting"
 	"github.com/SadPencil/sdunetd/utils"
+	"github.com/flowchartsman/retry"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -31,23 +33,30 @@ func version() {
 	fmt.Println(DESCRIPTION)
 }
 
-func detectNetwork(settings *setting.Settings, manager *sdunet.Manager) (bool, error) {
+func detectNetwork(ctx context.Context, settings *setting.Settings, manager *sdunet.Manager) (bool, error) {
+	// TODO context
 	if settings.Control.OnlineDetectionMethod == setting.ONLINE_DETECTION_METHOD_AUTH {
-		return detectNetworkWithAuthServer(manager)
+		return detectNetworkWithAuthServer(ctx, manager)
 	} else if settings.Control.OnlineDetectionMethod == setting.ONLINE_DETECTION_METHOD_MS {
-		return detectNetworkWithMicrosoft(manager)
+		return detectNetworkWithMicrosoft(ctx, manager)
 	} else {
-		return detectNetworkWithAuthServer(manager)
+		return detectNetworkWithAuthServer(ctx, manager)
 	}
 }
 
-func detectNetworkWithMicrosoft(manager *sdunet.Manager) (bool, error) {
+func detectNetworkWithMicrosoft(ctx context.Context, manager *sdunet.Manager) (bool, error) {
 	client, err := manager.GetHttpClient()
 	if err != nil {
 		return false, err
 	}
 
-	resp, err := client.Get("http://www.msftconnecttest.com/connecttest.txt")
+	// TODO context
+	req, err := http.NewRequestWithContext(ctx, "GET", "http://www.msftconnecttest.com/connecttest.txt", nil)
+	if err != nil {
+		return false, err
+	}
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return false, err
 	}
@@ -61,8 +70,8 @@ func detectNetworkWithMicrosoft(manager *sdunet.Manager) (bool, error) {
 	return bytes.Compare(body, []byte("Microsoft Connect Test")) == 0, nil
 }
 
-func detectNetworkWithAuthServer(manager *sdunet.Manager) (bool, error) {
-	info, err := manager.GetUserInfo()
+func detectNetworkWithAuthServer(ctx context.Context, manager *sdunet.Manager) (bool, error) {
+	info, err := manager.GetUserInfo(ctx)
 	if err != nil {
 		return false, err
 	} else {
@@ -70,90 +79,60 @@ func detectNetworkWithAuthServer(manager *sdunet.Manager) (bool, error) {
 	}
 }
 
-type Action func() error
-
-func retryWithSettings(settings *setting.Settings, action Action, exitNow *bool) error {
-	return retry(settings.Control.MaxRetryCount, settings.Control.RetryIntervalSec, action, exitNow)
-}
-func retry(retryTimes int32, retryIntervalSec int32, action Action, exitNow *bool) error {
-	errorList := make([]error, 0)
-	aggregateErrors := func(errorList []error) error {
-		errorMsg := ""
-		for j := 0; j < len(errorList); j++ {
-			errorMsg += "[" + fmt.Sprint(j) + "] " + errorList[j].Error()
-		}
-		return errors.New(errorMsg)
-	}
-	for i := int32(0); i < retryTimes; i++ {
-		err := action()
-		if err == nil {
-			return nil
-		}
-		errorList = append(errorList, err)
-		if i == retryTimes-1 {
-			return aggregateErrors(errorList)
-		}
-
-		if exitNow != nil && *exitNow {
-			return aggregateErrors(errorList)
-		}
-
-		for i := int32(0); i < retryIntervalSec; i++ {
-			time.Sleep(time.Second)
-
-			if exitNow != nil && *exitNow {
-				return aggregateErrors(errorList)
-			}
-		}
-	}
-	// impossible path
-	// make compiler happy
-	return errors.New("assert failed")
+func retryWithSettings(ctx context.Context, settings *setting.Settings, action func() error) error {
+	return _retry(ctx, int(settings.Control.MaxRetryCount), int(settings.Control.RetryIntervalSec), action)
 }
 
-func logout(settings *setting.Settings, exitNow *bool) error {
+func _retry(ctx context.Context, retryTimes int, retryIntervalSec int, action func() error) error {
+	retrier := retry.NewRetrier(retryTimes, time.Duration(retryIntervalSec)*time.Second, time.Duration(retryIntervalSec)*time.Second)
+	return retrier.RunContext(ctx, func(ctx context.Context) error {
+		return action()
+	})
+}
+
+func logout(ctx context.Context, settings *setting.Settings) error {
 	logger.Println("Logout via web portal...")
-	return retryWithSettings(settings, func() error {
-		manager, err := getManager(settings)
+	return retryWithSettings(ctx, settings, func() error {
+		manager, err := getManager(ctx, settings)
 		if err != nil {
 			return err
 		}
-		err = manager.Logout()
+		err = manager.Logout(ctx)
 		if err != nil {
 			return err
 		}
 		logger.Println("Logged out.")
 		return nil
-	}, exitNow)
+	})
 }
 
-func login(settings *setting.Settings, exitNow *bool) error {
+func login(ctx context.Context, settings *setting.Settings) error {
 	logger.Println("Log in via web portal...")
-	return retryWithSettings(settings, func() error {
-		manager, err := getManager(settings)
+	return retryWithSettings(ctx, settings, func() error {
+		manager, err := getManager(ctx, settings)
 		if err != nil {
 			return err
 		}
-		err = manager.Login(settings.Account.Password)
+		err = manager.Login(ctx, settings.Account.Password)
 		if err != nil {
 			return err
 		}
 		logger.Println("Logged in.")
 		return nil
-	}, exitNow)
+	})
 }
 
-func loginIfNotOnline(settings *setting.Settings, exitNow *bool) error {
+func loginIfNotOnline(ctx context.Context, settings *setting.Settings) error {
 	isOnline := false
 
-	err := retryWithSettings(settings, func() error {
-		manager, err := getManager(settings)
+	err := retryWithSettings(ctx, settings, func() error {
+		manager, err := getManager(ctx, settings)
 		if err != nil {
 			return err
 		}
-		isOnline, err = detectNetwork(settings, manager)
+		isOnline, err = detectNetwork(ctx, settings, manager)
 		return err
-	}, exitNow)
+	})
 
 	if err == nil && isOnline {
 		logger.Println("Network is up. Nothing to do.")
@@ -165,12 +144,28 @@ func loginIfNotOnline(settings *setting.Settings, exitNow *bool) error {
 		}
 
 		logger.Println("Network is down.")
-		err = login(settings, exitNow)
+		err = login(ctx, settings)
 		if err != nil {
 			logger.Println(err)
 		}
 		return err
 	}
+}
+
+func onExit(action func()) {
+	// set up handler for SIGINT and SIGTERM
+	c := make(chan os.Signal)
+	signal.Notify(c, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	go func() {
+		for s := range c {
+			switch s {
+			case syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT:
+				action()
+				return
+			default:
+			}
+		}
+	}()
 }
 
 func main() {
@@ -276,18 +271,18 @@ func main() {
 	}
 
 	if FlagIPDetect {
-		err := retryWithSettings(settings, func() error {
-			manager, err := getManager(settings)
+		err := retryWithSettings(context.Background(), settings, func() error {
+			manager, err := getManager(context.Background(), settings)
 			if err != nil {
 				return err
 			}
-			info, err := manager.GetUserInfo()
+			info, err := manager.GetUserInfo(context.Background())
 			if err != nil {
 				return err
 			}
 			fmt.Println(info.ClientIP)
 			return nil
-		}, nil)
+		})
 		if err != nil {
 			logger.Panicln(err)
 		}
@@ -296,7 +291,7 @@ func main() {
 
 	if FlagOneshoot {
 		version()
-		err := login(settings, nil)
+		err := login(context.Background(), settings)
 		if err != nil {
 			logger.Panicln(err)
 		}
@@ -306,7 +301,7 @@ func main() {
 
 	if FlagTryOneshoot {
 		version()
-		err := loginIfNotOnline(settings, nil)
+		err := loginIfNotOnline(context.Background(), settings)
 		if err != nil {
 			logger.Panicln(err)
 		}
@@ -315,7 +310,7 @@ func main() {
 
 	if FlagLogout {
 		version()
-		err := logout(settings, nil)
+		err := logout(context.Background(), settings)
 		if err != nil {
 			logger.Panicln(err)
 		}
@@ -325,47 +320,36 @@ func main() {
 	version()
 
 	// main loop
+	ctx, cancelFunc := context.WithCancel(context.Background())
+	onExit(func() {
+		logger.Println("Exiting...")
+		cancelFunc()
+	})
 
-	// set up handler for SIGINT and SIGTERM
-	pauseNow := false
-	exitNow := false
-	c := make(chan os.Signal)
-	signal.Notify(c, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-	go func() {
-		for s := range c {
-			switch s {
-			case syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT:
-				logger.Println("Exiting...")
-				terminateManager()
-
-				if settings.Control.LogoutWhenExit {
-					pauseNow = true
-					_ = logout(settings, nil)
-					pauseNow = false
-				}
-
-				exitNow = true
-			default:
-			}
-		}
-	}()
+	_ = loginIfNotOnline(ctx, settings)
 
 	for {
-		for pauseNow && !exitNow {
-			time.Sleep(time.Second)
+		canceled := false
+
+		select {
+		case <-time.After(time.Duration(settings.Control.LoopIntervalSec) * time.Second):
+			_ = loginIfNotOnline(ctx, settings)
+		case <-ctx.Done():
+			canceled = true
 		}
-		if exitNow {
+
+		if canceled {
 			break
 		}
-		_ = loginIfNotOnline(settings, &exitNow)
-
-		for i := int32(0); i < settings.Control.LoopIntervalSec; i++ {
-			if exitNow {
-				break
-			}
-			time.Sleep(time.Second)
-		}
-
 	}
 
+	// Cleanup
+	if settings.Control.LogoutWhenExit {
+		ctx, cancelFunc := context.WithCancel(context.Background())
+		onExit(func() {
+			logger.Println("Force exiting. Abort logging out action...")
+			cancelFunc()
+		})
+		_ = logout(ctx, settings)
+	}
 }

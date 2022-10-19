@@ -8,24 +8,15 @@ import (
 )
 
 var _manager *sdunet.Manager
-var _manager_cancel context.CancelFunc
 
-func terminateManager() {
-	if _manager_cancel != nil {
-		_manager_cancel()
-	}
-	_manager = nil
-	_manager_cancel = nil
-}
-
-func getManager(settings *setting.Settings) (*sdunet.Manager, error) {
+func getManager(ctx context.Context, settings *setting.Settings) (*sdunet.Manager, error) {
 	if _manager == nil {
 		networkInterface := ""
 		if settings.Network.StrictMode {
 			networkInterface = settings.Network.Interface
 		}
 
-		manager, err := sdunet.GetManager(
+		manager, err := sdunet.GetManager(ctx,
 			settings.Account.Scheme,
 			settings.Account.AuthServer,
 			settings.Account.Username,
@@ -39,11 +30,7 @@ func getManager(settings *setting.Settings) (*sdunet.Manager, error) {
 		manager.RetryWait = time.Duration(settings.Network.RetryIntervalSec) * time.Second
 		manager.Logger = verboseLogger
 
-		ctx, cancel := context.WithCancel(context.Background())
-		manager.Context = ctx
-
 		_manager = &manager
-		_manager_cancel = cancel
 	}
 	return _manager, nil
 }
