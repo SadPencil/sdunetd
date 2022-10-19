@@ -11,7 +11,9 @@ var _manager *sdunet.Manager
 var _manager_cancel context.CancelFunc
 
 func terminateManager() {
-	_manager_cancel()
+	if _manager_cancel != nil {
+		_manager_cancel()
+	}
 	_manager = nil
 	_manager_cancel = nil
 }
@@ -39,9 +41,9 @@ func getManager(settings *setting.Settings) (*sdunet.Manager, error) {
 
 		ctx, cancel := context.WithCancel(context.Background())
 		manager.Context = ctx
-		_manager_cancel = cancel
 
 		_manager = &manager
+		_manager_cancel = cancel
 	}
 	return _manager, nil
 }
