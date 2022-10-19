@@ -1,0 +1,20 @@
+name: Remove old artifacts
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  remove-old-artifacts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+    - name: Remove old artifacts
+      uses: c-hive/gha-remove-artifacts@v1
+      with:
+        age: '1 second'
+        # Optional inputs
+        # skip-tags: true
+        # the value of `skip-recent` means reserving the latest number's artifacts, instead of the latest number's commits'.
+        skip-recent: 4
