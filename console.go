@@ -88,7 +88,7 @@ func cartman() {
 		fmt.Println()
 		fmt.Println("Question 3. What's the authentication server's ip address? [" + setting.DEFAULT_AUTH_SERVER + "]")
 		fmt.Println("Hint: You can also write down the server's FQDN if necessary. You may specify either an IPv4 or IPv6 server.")
-		fmt.Println("The authentication servers of SDU-Qingdao are [2001:250:5800:11::1] and 101.76.193.1.")
+		fmt.Println("Hint: The authentication servers of SDU-Qingdao are [2001:250:5800:11::1] and 101.76.193.1.")
 		settings.Account.AuthServer, err = reader.ReadString('\n')
 		if err != nil {
 			panic(err)
@@ -109,7 +109,8 @@ func cartman() {
 
 	for {
 		fmt.Println()
-		fmt.Println("Question 4. Does the authentication server use HTTP protocol, or HTTPS? [" + setting.DEFAULT_AUTH_SCHEME + "]")
+		fmt.Println("Question 4. Does the authentication server use HTTP, or HTTPS? [" + setting.DEFAULT_AUTH_SCHEME + "]")
+		fmt.Println("Hint: The authentication servers of SDU-Qingdao use HTTP.")
 		settings.Account.Scheme, err = reader.ReadString('\n')
 		if err != nil {
 			panic(err)
