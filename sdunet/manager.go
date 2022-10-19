@@ -9,6 +9,7 @@ package sdunet
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"io/ioutil"
@@ -28,6 +29,7 @@ type MangerBase struct {
 	MaxRetryCount         int
 	RetryWait             time.Duration
 	Logger                *log.Logger
+	Context               context.Context
 }
 
 type Manager struct {
@@ -41,17 +43,16 @@ type UserInfo struct {
 	LoggedIn bool
 }
 
-func GetManager(scheme string, server string, username string, forceNetworkInterface string,
-	timeout time.Duration, maxRetryCount int, retryWait time.Duration,
-	logger *log.Logger) (Manager, error) {
+func GetManager(scheme string, server string, username string, forceNetworkInterface string) (Manager, error) {
 	base := MangerBase{
 		Scheme:                scheme,
 		Server:                server,
 		ForceNetworkInterface: forceNetworkInterface,
-		Timeout:               timeout,
-		MaxRetryCount:         maxRetryCount,
-		RetryWait:             retryWait,
-		Logger:                logger,
+		Timeout:               3 * time.Second,
+		MaxRetryCount:         3,
+		RetryWait:             1 * time.Second,
+		Logger:                log.Default(),
+		Context:               context.Background(),
 	}
 	info, err := base.GetUserInfo()
 	if err != nil {
@@ -114,7 +115,7 @@ func (m MangerBase) httpJsonQuery(relativeUrl string, getParams url.Values, json
 		return nil, err
 	}
 
-	req, err := http.NewRequest("GET", m.Scheme+"://"+m.Server+relativeUrl, nil)
+	req, err := http.NewRequestWithContext(m.Context, "GET", m.Scheme+"://"+m.Server+relativeUrl, nil)
 	if err != nil {
 		return nil, err
 	}

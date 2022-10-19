@@ -111,36 +111,6 @@ func retry(retryTimes int32, retryIntervalSec int32, action Action, exitNow *boo
 	return errors.New("assert failed")
 }
 
-var _manager *sdunet.Manager
-
-func getManager(settings *setting.Settings) (*sdunet.Manager, error) {
-	if _manager == nil {
-		networkInterface := ""
-		if settings.Network.StrictMode {
-			networkInterface = settings.Network.Interface
-		}
-
-		manager, err := sdunet.GetManager(
-			settings.Account.Scheme,
-			settings.Account.AuthServer,
-			settings.Account.Username,
-			networkInterface,
-			time.Duration(settings.Network.Timeout)*time.Second,
-			int(settings.Network.MaxRetryCount),
-			time.Duration(settings.Network.RetryIntervalSec)*time.Second,
-			verboseLogger,
-		)
-		if err != nil {
-			return nil, err
-		}
-		if err != nil {
-			return nil, err
-		}
-		_manager = &manager
-	}
-	return _manager, nil
-}
-
 func logout(settings *setting.Settings, exitNow *bool) error {
 	logger.Println("Logout via web portal...")
 	return retryWithSettings(settings, func() error {
@@ -366,11 +336,14 @@ func main() {
 			switch s {
 			case syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT:
 				logger.Println("Exiting...")
+				terminateManager()
+
 				if settings.Control.LogoutWhenExit {
 					pauseNow = true
 					_ = logout(settings, nil)
 					pauseNow = false
 				}
+
 				exitNow = true
 			default:
 			}
