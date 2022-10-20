@@ -73,6 +73,7 @@ func detectNetworkWithAuthServer(ctx context.Context, manager *sdunet.Manager) (
 	if err != nil {
 		return false, err
 	} else {
+		logger.Println("IP address:", info.ClientIP)
 		return info.LoggedIn, nil
 	}
 }
