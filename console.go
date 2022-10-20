@@ -28,9 +28,7 @@ func cartman() {
 	settings := setting.NewSettings()
 	reader := bufio.NewReader(os.Stdin)
 
-	fmt.Println("Looks like the config file doesn't exist.")
-	fmt.Println("That's okay if you just want to do a Portal authentication for once, or to generate a config file.")
-	fmt.Println("A few questions need to be answered. Leave it blank if you want the default answer in the bracket.")
+	fmt.Println("To generate a config file, a few questions need to be answered. Leave it blank if you want the default answer in the bracket.")
 
 	var err error
 
@@ -261,7 +259,7 @@ func cartman() {
 				if err != nil {
 					fmt.Println(err)
 				} else {
-					fmt.Println(`File saved. You may re-run the program with the "-c" flag.`)
+					fmt.Println(`File saved. You may re-run the program with the "-c" flag. Example: sdunetd -c config.json`)
 				}
 			}
 		}

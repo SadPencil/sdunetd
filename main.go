@@ -168,28 +168,28 @@ func onExit(action func()) {
 
 func main() {
 	var FlagShowHelp bool
-	flag.BoolVar(&FlagShowHelp, "h", false, "standalone: show the help.")
+	flag.BoolVar(&FlagShowHelp, "h", false, "standalone: show this help.")
 
 	var FlagShowVersion bool
 	flag.BoolVar(&FlagShowVersion, "V", false, "standalone: show the version.")
 
 	var FlagConfigFile string
-	flag.StringVar(&FlagConfigFile, "c", "", "the config.json file. Leave it blank to use the interact mode.")
+	flag.StringVar(&FlagConfigFile, "c", "", "the path to the config.json file. Leave it blank to generate a new configuration file interactively.")
 
 	var FlagLogOutput string
-	flag.StringVar(&FlagLogOutput, "o", "", "set the output file of log message. Empty means stderr, and - means stdout.")
+	flag.StringVar(&FlagLogOutput, "o", "", "the path to the output file of log message. Empty means stderr, and - means stdout.")
 
 	var FlagNoAttribute bool
-	flag.BoolVar(&FlagNoAttribute, "m", false, "option: output log without attributes. Turn it on when running as a systemd service.")
+	flag.BoolVar(&FlagNoAttribute, "m", false, "option: output log without the timestamp prefix. Turn it on when running as a systemd service.")
 
 	var FlagIPDetect bool
 	flag.BoolVar(&FlagIPDetect, "a", false, "standalone: detect the IP address from the authenticate server. Useful when behind a NAT router.")
 
 	var FlagOneshoot bool
-	flag.BoolVar(&FlagOneshoot, "f", false, "standalone: login to the network for once, regardless of whether Internet is available.")
+	flag.BoolVar(&FlagOneshoot, "f", false, "standalone: login to the network for once, regardless of whether the network is offline.")
 
 	var FlagTryOneshoot bool
-	flag.BoolVar(&FlagTryOneshoot, "t", false, "standalone: login to the network for once, only if Internet isn't available.")
+	flag.BoolVar(&FlagTryOneshoot, "t", false, "standalone: login to the network for once, only if the network is offline.")
 
 	var FlagLogout bool
 	flag.BoolVar(&FlagLogout, "l", false, "standalone: logout from the network for once.")
